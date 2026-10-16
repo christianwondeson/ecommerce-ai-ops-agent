@@ -37,6 +37,7 @@ flowchart TD
         ST_03["Station 03: Black Box Autonomous Audit Stream"]
         ST_04["Station 04: Gemini Dispatch Radio (Natural Language Override)"]
         ST_05["Station 05: Financial Escrow & Multi-Vendor Ledger (12% Fee)"]
+        ST_06["Station 06: Checkout & Callback Reconciliation Gateway"]
     end
 
     subgraph DAG["Multi-Agent Autonomous Orchestrator"]
@@ -45,6 +46,7 @@ flowchart TD
         PROC_AGENT["Procurement & Failover Agent (Auto PO & Secondary Supplier)"]
         LOG_AGENT["Logistics & Exception Agent (Webhook Sync & Rerouting)"]
         ESCROW_AGENT["Financial Settlement Agent (12% Take & Zero-Trust Escrow)"]
+        PAYMENT_AGENT["Payment Reconciliation & Orphan Reaper Agent"]
     end
 
     subgraph Core["Backend Runtime (Node.js + Express + TypeScript)"]
@@ -104,6 +106,11 @@ flowchart TD
 - **12% Marketplace Commission Retention:** Platform retains exactly 12% gross commission on all marketplace transactions.
 - **Gateway Deductions:** Accounts for standard processing fees (2.9% + $0.30).
 - **Automated Milestone Disbursement:** The moment carrier delivery proof is validated, the escrow engine automatically disburses the net payout to the vendor and logs the release reason in the public ledger.
+
+### Station 06: Checkout Callback & Payment Reconciliation Gateway
+- **Callback vs. Webhook Race Condition Resolution:** Resolves distributed transaction lags where the client browser returns to the checkout callback (`status=success` or `status=pending`) *before* the asynchronous payment gateway webhook is delivered.
+- **Idempotent Settlement State Machine:** Verifies the gateway transaction reference, converts the session into a live fulfillment order, and blocks duplicate double-charging.
+- **Autonomous Inventory Hold Reaper:** If an abandoned checkout session stalls, the AI agent auto-expires the hold and releases the reserved units back to catalog inventory, preventing artificial stockouts.
 
 ### Interactive Stress-Test Scenario Simulator
 Reviewers can trigger 3 live enterprise scenarios directly from the top bar:

@@ -41,9 +41,14 @@ In response to reviewer feedback to elevate the system beyond basic CRUD-and-cha
    - **12% Marketplace Commission Retention:** Platform automatically retains a 12% take rate on all marketplace orders.
    - **Milestone Settlement:** Unlocks net payouts to vendors the instant delivery proof is confirmed, or holds funds if an exception occurs.
 
-5. **🤖 Station 03 & 04: Black Box Audit Trail & Gemini Dispatch Radio:**
+5. **⚡ Station 06: Checkout Callback & Payment Reconciliation Gateway:**
+   - **Race Condition Resolution:** Handles situations where customer browser redirects back to callback page (`status=success` or `status=pending`) *before* the payment gateway webhook arrives.
+   - **Autonomous Payment Healer:** Queries gateway reference asynchronously, prevents double-charging, and converts session into a confirmed fulfillment order.
+   - **Orphan Inventory Hold Reaper:** If a customer abandons checkout, the agent auto-expires the hold and releases the reserved units back to the catalog, preventing false stockouts.
+
+6. **🤖 Station 03 & 04: Black Box Audit Trail & Gemini Dispatch Radio:**
    - **Immutable Audit Feed:** Tracks every action with source attribution (`MULTI_AGENT_DAG`, `AUTONOMOUS_CRON`, `COURIER_WEBHOOK`, `HUMAN_OVERRIDE`).
-   - **Natural Language Operator Radio:** Gemini 3.5 Flash Lite tool-calling interface with deterministic fallback for seamless offline review.
+   - **Natural Language Operator Radio:** Gemini 3.5 Flash Lite with live real-time store context injection and deterministic fallback answering any product, vendor, or operational question.
 
 ---
 
@@ -58,6 +63,7 @@ flowchart TD
         ST_03["Station 03: Black Box Autonomous Audit Stream"]
         ST_04["Station 04: Gemini Dispatch Radio (Natural Language Override)"]
         ST_05["Station 05: Financial Escrow & Multi-Vendor Ledger (12% Fee)"]
+        ST_06["Station 06: Checkout & Callback Reconciliation Gateway"]
     end
 
     subgraph DAG["Multi-Agent Autonomous Orchestrator"]
@@ -66,6 +72,7 @@ flowchart TD
         PROC_AGENT["Procurement & Failover Agent (Auto PO & Secondary Supplier)"]
         LOG_AGENT["Logistics & Exception Agent (Webhook Sync & Rerouting)"]
         ESCROW_AGENT["Financial Settlement Agent (12% Take & Zero-Trust Escrow)"]
+        PAYMENT_AGENT["Payment Reconciliation & Orphan Reaper Agent"]
     end
 
     subgraph Core["Backend Runtime (Node.js + Express + TypeScript)"]
