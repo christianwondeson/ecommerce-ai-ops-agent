@@ -1,76 +1,6 @@
 import { API_BASE } from "../config";
-
-export interface Product {
-  id: string;
-  name: string;
-  sku: string;
-  category: string;
-  currentStock: number;
-  reorderThreshold: number;
-  suggestedReorderQuantity: number;
-  vendorEmail: string;
-  vendorName: string;
-  unitPrice: number;
-  isRestockFlagged: boolean;
-  restockUrgency?: 'LOW' | 'MEDIUM' | 'CRITICAL';
-  lastRestockFlaggedAt?: string;
-  lastPoDispatchedAt?: string;
-}
-
-export type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED';
-
-export interface OrderItem {
-  sku: string;
-  name: string;
-  quantity: number;
-  price: number;
-}
-
-export interface Order {
-  id: string;
-  orderNumber: string;
-  customerName: string;
-  customerEmail: string;
-  items: OrderItem[];
-  totalAmount: number;
-  status: OrderStatus;
-  courierCarrier: string;
-  trackingNumber: string;
-  courierStatus: string;
-  lastTrackingNote: string;
-  shippedAt: string;
-  deliveredAt?: string;
-  reconciledByAi: boolean;
-  reconciliationNotes?: string;
-}
-
-export type AuditActionType =
-  | 'RESTOCK_FLAG'
-  | 'PO_DISPATCHED'
-  | 'DELIVERY_RECONCILED'
-  | 'PROACTIVE_SWEEP'
-  | 'AGENT_DIRECTIVE';
-
-export interface AuditLog {
-  id: string;
-  timestamp: string;
-  actionType: AuditActionType;
-  summary: string;
-  details: Record<string, any>;
-  source: 'AUTONOMOUS_CRON' | 'COURIER_WEBHOOK' | 'HUMAN_OVERRIDE' | 'REAL_TIME_INVENTORY';
-}
-
-export interface SchedulerState {
-  isRunning: boolean;
-  cronExpression: string;
-  lastRunTimestamp?: string;
-  totalRuns: number;
-  lastFindings?: {
-    lowStockFound: number;
-    reconciledCount: number;
-    delayedOrdersFound: number;
-  };
-}
+export * from "../types";
+import type { Product, Order, AuditLog, SchedulerState, FinancialEscrow } from "../types";
 
 export const api = {
   async getInventory(): Promise<Product[]> {
@@ -95,6 +25,21 @@ export const api = {
     const res = await fetch(`${API_BASE}/api/scheduler`);
     const data = await res.json();
     return data.state;
+  },
+
+  async getEscrows(): Promise<FinancialEscrow[]> {
+    const res = await fetch(`${API_BASE}/api/escrows`);
+    const data = await res.json();
+    return data.escrows || [];
+  },
+
+  async releaseEscrow(orderId: string, reason?: string): Promise<unknown> {
+    const res = await fetch(`${API_BASE}/api/escrows/release`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, reason }),
+    });
+    return await res.json();
   },
 
   async triggerSweep(): Promise<unknown> {
@@ -155,6 +100,39 @@ export const api = {
         status: 'DELIVERED_HANDED_TO_RECIPIENT',
         notes: 'Package safely delivered and signed by customer at recipient address.',
       }),
+    });
+    return await res.json();
+  },
+
+  async resolveException(orderId: string, resolutionAction?: string): Promise<unknown> {
+    const res = await fetch(`${API_BASE}/api/orders/resolve-exception`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, resolutionAction }),
+    });
+    return await res.json();
+  },
+
+  // Scenarios
+  async triggerFlashSale(): Promise<unknown> {
+    const res = await fetch(`${API_BASE}/api/scenarios/flash-sale`, { method: 'POST' });
+    return await res.json();
+  },
+
+  async triggerCarrierDisruption(orderId?: string): Promise<unknown> {
+    const res = await fetch(`${API_BASE}/api/scenarios/carrier-delay`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId }),
+    });
+    return await res.json();
+  },
+
+  async triggerSupplierFailover(productId?: string): Promise<unknown> {
+    const res = await fetch(`${API_BASE}/api/scenarios/supplier-failover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId }),
     });
     return await res.json();
   },

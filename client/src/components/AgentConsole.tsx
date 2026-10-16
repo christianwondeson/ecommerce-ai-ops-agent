@@ -4,10 +4,12 @@ import { api } from "@/lib/api";
 
 type Msg = { role: "user" | "model"; text: string; tools?: string[] | undefined };
 const PROMPTS = [
-  "Which products need restocking right now?",
-  "Reconcile all in-transit orders",
-  "Send a PO for every critical item",
-  "Run a full audit sweep",
+  "Forecast days of inventory remaining (DIR) & stockout risks",
+  "Audit marketplace escrow ledger & locked vendor payouts",
+  "Simulate Black Friday flash sale surge across catalog",
+  "Resolve courier delivery exceptions & lift escrow holds",
+  "Engage backup supplier failover for depleted inventory",
+  "Reconcile in-transit orders & disburse vendor escrow",
 ];
 
 export function AgentConsole() {

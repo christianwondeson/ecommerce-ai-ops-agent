@@ -143,6 +143,7 @@ export class InventoryService {
     }
 
     product.currentStock = Math.max(0, product.currentStock - quantitySold);
+    db.recalculateProductMetrics(product.id);
     let autoFlagged = false;
 
     // Proactive auto-trigger: If stock drops below threshold and not yet flagged

@@ -1,5 +1,19 @@
 export type RestockUrgency = 'LOW' | 'MEDIUM' | 'CRITICAL';
 
+export interface PredictiveAnalytics {
+  burnRatePerDay: number;
+  daysOfInventoryRemaining: number;
+  stockoutRiskPercentage: number;
+  leadTimeDays: number;
+  vendorOtifScore: number; // On-Time In-Full reliability % (e.g. 98.4%)
+  secondarySupplier?: {
+    name: string;
+    email: string;
+    unitPrice: number;
+    leadTimeDays: number;
+  };
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -15,6 +29,7 @@ export interface Product {
   restockUrgency?: RestockUrgency;
   lastRestockFlaggedAt?: string;
   lastPoDispatchedAt?: string;
+  predictive: PredictiveAnalytics;
 }
 
 export type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED';
@@ -24,6 +39,13 @@ export interface OrderItem {
   name: string;
   quantity: number;
   price: number;
+}
+
+export interface DeliveryException {
+  hasException: boolean;
+  exceptionType?: 'WEATHER_HOLD' | 'FAILED_ATTEMPT_GATE_LOCKED' | 'ADDRESS_UNCONFIRMED' | 'HUB_DELAY';
+  severity?: 'LOW' | 'MEDIUM' | 'HIGH';
+  mitigationAction?: string;
 }
 
 export interface Order {
@@ -42,6 +64,25 @@ export interface Order {
   deliveredAt?: string;
   reconciledByAi: boolean;
   reconciliationNotes?: string;
+  exception?: DeliveryException;
+}
+
+export type EscrowStatus = 'LOCKED' | 'RELEASED' | 'DISPUTE_HOLD';
+
+export interface FinancialEscrow {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  customerName: string;
+  vendorName: string;
+  grossAmount: number;
+  platformTake: number; // 12% marketplace fee
+  gatewayFee: number;   // 2.9% + 0.30 processing
+  netVendorPayout: number;
+  status: EscrowStatus;
+  lockedAt: string;
+  releasedAt?: string;
+  releaseReason?: string;
 }
 
 export type AuditActionType =
@@ -49,7 +90,11 @@ export type AuditActionType =
   | 'PO_DISPATCHED'
   | 'DELIVERY_RECONCILED'
   | 'PROACTIVE_SWEEP'
-  | 'AGENT_DIRECTIVE';
+  | 'AGENT_DIRECTIVE'
+  | 'SCENARIO_SIMULATION'
+  | 'CARRIER_EXCEPTION'
+  | 'ESCROW_RELEASED'
+  | 'SUPPLIER_FAILOVER';
 
 export interface AuditLog {
   id: string;
@@ -57,7 +102,7 @@ export interface AuditLog {
   actionType: AuditActionType;
   summary: string;
   details: Record<string, any>;
-  source: 'AUTONOMOUS_CRON' | 'COURIER_WEBHOOK' | 'HUMAN_OVERRIDE' | 'REAL_TIME_INVENTORY';
+  source: 'AUTONOMOUS_CRON' | 'COURIER_WEBHOOK' | 'HUMAN_OVERRIDE' | 'REAL_TIME_INVENTORY' | 'MULTI_AGENT_DAG';
 }
 
 export interface SchedulerState {
@@ -72,3 +117,5 @@ export interface SchedulerState {
     delayedOrdersFound: number;
   };
 }
+
+export type StressScenario = 'FLASH_SALE_SURGE' | 'CARRIER_BREAKDOWN' | 'SUPPLIER_STOCKOUT';

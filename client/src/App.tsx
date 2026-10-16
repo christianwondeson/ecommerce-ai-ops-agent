@@ -2,22 +2,24 @@ import { useState } from "react";
 import { QueryClient, QueryClientProvider, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Toaster, toast } from "sonner";
 import { api } from "@/lib/api";
+import { ScenarioBar } from "./components/ScenarioBar";
 import { Inventory } from "./components/Inventory";
 import { Orders } from "./components/Orders";
 import { AuditFeed } from "./components/AuditFeed";
 import { AgentConsole } from "./components/AgentConsole";
+import { EscrowLedger } from "./components/EscrowLedger";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchInterval: 10000, // Poll every 10s for real-time telemetry
+      refetchInterval: 8000, // Poll every 8s for live multi-agent sync
     },
   },
 });
 
 function Dashboard() {
   const qc = useQueryClient();
-  const [activeView, setActiveView] = useState<"ALL" | "OPS" | "DISPATCH">("ALL");
+  const [activeView, setActiveView] = useState<"ALL" | "OPS" | "DISPATCH" | "ESCROW">("ALL");
 
   const { data: products = [] } = useQuery({
     queryKey: ["inventory"],
@@ -27,6 +29,11 @@ function Dashboard() {
   const { data: orders = [] } = useQuery({
     queryKey: ["orders"],
     queryFn: () => api.getOrders(),
+  });
+
+  const { data: escrows = [] } = useQuery({
+    queryKey: ["escrows"],
+    queryFn: () => api.getEscrows(),
   });
 
   const { data: auditLogs = [] } = useQuery({
@@ -51,13 +58,14 @@ function Dashboard() {
   const lowStockCount = products.filter((p) => p.isRestockFlagged || p.currentStock <= p.reorderThreshold).length;
   const inTransitCount = orders.filter((o) => o.status === "IN_TRANSIT").length;
   const deliveredCount = orders.filter((o) => o.status === "DELIVERED").length;
+  const exceptionCount = orders.filter((o) => o.exception?.hasException).length;
 
   return (
     <div className="mx-auto min-h-screen max-w-7xl px-4 py-6 font-sans">
       <Toaster position="top-right" theme="dark" richColors />
 
       {/* HEADER BAR */}
-      <header className="panel mb-6 flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center">
+      <header className="panel mb-4 flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center">
         <div>
           <div className="flex items-center gap-3">
             <span className="font-mono text-xs font-bold text-primary tracking-widest">[SYS-OPS-2026]</span>
@@ -66,11 +74,11 @@ function Dashboard() {
             </h1>
             <span className="label-tag flex items-center gap-1.5 border border-line bg-secondary px-2 py-0.5 text-ok">
               <span className="h-1.5 w-1.5 rounded-full bg-ok animate-blink" />
-              Autopilot Active
+              Multi-Agent DAG Active
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Inventory depletion auto-flagging · Carrier proof-of-delivery sync · Proactive cron engine
+            DIR stockout predictive forecasting · Courier exception rerouting · 12% marketplace escrow disburser
           </p>
         </div>
 
@@ -83,8 +91,13 @@ function Dashboard() {
             </div>
             <div className="h-3 w-px bg-line" />
             <div>
-              <span className="text-muted-foreground">IN-TRANSIT: </span>
+              <span className="text-muted-foreground">TRANSIT: </span>
               <strong className="text-foreground">{inTransitCount}</strong>
+            </div>
+            <div className="h-3 w-px bg-line" />
+            <div>
+              <span className="text-muted-foreground">ANOMALY: </span>
+              <strong className={exceptionCount > 0 ? "text-destructive" : "text-foreground"}>{exceptionCount}</strong>
             </div>
             <div className="h-3 w-px bg-line" />
             <div>
@@ -103,6 +116,9 @@ function Dashboard() {
         </div>
       </header>
 
+      {/* ONE-CLICK STRESS-TEST SCENARIOS SIMULATOR BAR */}
+      <ScenarioBar />
+
       {/* VIEW TABS */}
       <div className="mb-6 flex border-b border-line font-mono text-xs">
         <button
@@ -111,7 +127,7 @@ function Dashboard() {
             activeView === "ALL" ? "border-primary text-primary font-bold" : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
-          All Stations
+          All Stations (01–05)
         </button>
         <button
           onClick={() => setActiveView("OPS")}
@@ -119,7 +135,7 @@ function Dashboard() {
             activeView === "OPS" ? "border-primary text-primary font-bold" : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
-          01/02 Stock & Manifest
+          01/02 Stock & Courier
         </button>
         <button
           onClick={() => setActiveView("DISPATCH")}
@@ -128,6 +144,14 @@ function Dashboard() {
           }`}
         >
           03/04 Black Box & Radio
+        </button>
+        <button
+          onClick={() => setActiveView("ESCROW")}
+          className={`border-b-2 px-4 py-2 uppercase tracking-wider transition-colors ${
+            activeView === "ESCROW" ? "border-primary text-primary font-bold" : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          05 Escrow Ledger
         </button>
       </div>
 
@@ -141,6 +165,9 @@ function Dashboard() {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <AuditFeed logs={auditLogs} />
             <AgentConsole />
+          </div>
+          <div>
+            <EscrowLedger escrows={escrows} />
           </div>
         </div>
       )}
@@ -159,10 +186,16 @@ function Dashboard() {
         </div>
       )}
 
+      {activeView === "ESCROW" && (
+        <div className="space-y-6">
+          <EscrowLedger escrows={escrows} />
+        </div>
+      )}
+
       {/* FOOTER */}
       <footer className="mt-12 flex flex-col items-center justify-between gap-2 border-t border-line pt-4 font-mono text-[10px] text-muted-foreground md:flex-row">
         <span>AUTONOMOUS E-COMMERCE OPERATIONS SPECIALIST • LEVEL 1 ASSESSMENT</span>
-        <span>SCHEDULER: {scheduler?.cronExpression || "*/15 * * * *"} • SWEEPS: {scheduler?.totalRuns || 0}</span>
+        <span>SCHEDULER: {scheduler?.cronExpression || "*/15 * * * *"} • TOTAL SWEEPS: {scheduler?.totalRuns || 0}</span>
       </footer>
     </div>
   );

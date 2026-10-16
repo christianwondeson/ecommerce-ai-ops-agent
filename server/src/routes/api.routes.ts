@@ -3,6 +3,7 @@ import { db } from '../data/db.js';
 import { inventoryService } from '../services/inventory.service.js';
 import { courierService } from '../services/courier.service.js';
 import { schedulerService } from '../services/scheduler.service.js';
+import { scenariosService } from '../services/scenarios.service.js';
 import { processAgentConversation } from '../agent/gemini.js';
 
 export const apiRouter = Router();
@@ -67,6 +68,63 @@ apiRouter.post('/courier/webhook', async (req, res) => {
     notes: notes || 'Delivery completed at recipient destination.',
   });
   res.json({ success: true, ...result });
+});
+
+apiRouter.post('/orders/resolve-exception', async (req, res) => {
+  const { orderId, resolutionAction } = req.body;
+  if (!orderId) {
+    return res.status(400).json({ success: false, message: 'Missing orderId' });
+  }
+  const result = await courierService.resolveDeliveryException(orderId, resolutionAction);
+  res.json(result);
+});
+
+// ==========================================
+// FINANCIAL ESCROW LEDGER ENDPOINTS
+// ==========================================
+apiRouter.get('/escrows', (req, res) => {
+  res.json({ success: true, escrows: db.escrows });
+});
+
+apiRouter.post('/escrows/release', (req, res) => {
+  const { orderId, reason } = req.body;
+  const escrow = db.releaseEscrowForOrder(orderId, reason || 'Manual operator disbursement override.');
+  if (!escrow) {
+    return res.status(404).json({ success: false, message: 'Escrow not found or already released.' });
+  }
+  res.json({ success: true, escrow });
+});
+
+// ==========================================
+// STRESS-TEST SCENARIOS SIMULATOR ENDPOINTS
+// ==========================================
+apiRouter.post('/scenarios/flash-sale', async (req, res) => {
+  try {
+    const result = await scenariosService.triggerFlashSaleSurge();
+    res.json({ success: true, ...result });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+apiRouter.post('/scenarios/carrier-delay', async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    const result = await scenariosService.triggerCarrierDisruption(orderId);
+    res.json({ success: true, ...result });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+apiRouter.post('/scenarios/supplier-failover', async (req, res) => {
+  try {
+    const { productId } = req.body;
+    const result = await scenariosService.triggerSupplierFailover(productId);
+    res.json({ success: true, ...result });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 // ==========================================

@@ -6,6 +6,10 @@ const color: Record<string, string> = {
   DELIVERY_RECONCILED: "text-ok",
   PROACTIVE_SWEEP: "text-primary",
   AGENT_DIRECTIVE: "text-accent",
+  SCENARIO_SIMULATION: "text-primary font-bold",
+  CARRIER_EXCEPTION: "text-destructive font-bold",
+  ESCROW_RELEASED: "text-ok font-bold",
+  SUPPLIER_FAILOVER: "text-caution font-bold",
 };
 
 export function AuditFeed({ logs }: { logs: AuditLog[] }) {

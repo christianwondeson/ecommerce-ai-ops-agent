@@ -53,6 +53,14 @@ export class CourierService {
     }
     order.reconciliationNotes = `Automated reconciliation executed. Proof: "${order.lastTrackingNote}". Carrier: ${order.courierCarrier}`;
 
+    // Clear exception if present
+    if (order.exception) {
+      order.exception.hasException = false;
+    }
+
+    // Release vendor financial escrow
+    db.releaseEscrowForOrder(order.id, 'Carrier proof validated; automated delivery milestone reached.');
+
     // Dispatches customer notification email
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
@@ -74,7 +82,7 @@ export class CourierService {
 
     db.addAudit({
       actionType: 'DELIVERY_RECONCILED',
-      summary: `[Autonomous Reconciliation] Transitioned Order #${order.orderNumber} status to DELIVERED based on ${order.courierCarrier} proof-of-delivery note. Customer notified.`,
+      summary: `[Autonomous Reconciliation] Transitioned Order #${order.orderNumber} status to DELIVERED based on ${order.courierCarrier} proof-of-delivery note. Escrow released to vendor. Customer notified.`,
       details: {
         orderId: order.id,
         orderNumber: order.orderNumber,
@@ -139,6 +147,49 @@ export class CourierService {
       reconciled: false,
       message: `Carrier update recorded for Order #${order.orderNumber} (Status: ${event.status}). Not delivered yet.`,
       order,
+    };
+  }
+
+  async resolveDeliveryException(
+    orderIdentifier: string,
+    resolutionAction?: string
+  ): Promise<{ success: boolean; order?: Order; message: string }> {
+    const order = this.getOrderById(orderIdentifier);
+    if (!order) {
+      return { success: false, message: `Order ${orderIdentifier} could not be found.` };
+    }
+
+    const action = resolutionAction || 'AI Logistics Agent rerouted shipment via priority courier corridor. Exception resolved.';
+    if (order.exception) {
+      order.exception.hasException = false;
+      order.exception.mitigationAction = action;
+    }
+
+    order.courierStatus = 'IN_TRANSIT_REROUTED';
+    order.lastTrackingNote = `${action} Package moving on expedited schedule.`;
+
+    // Restore escrow if was on DISPUTE_HOLD
+    const escrow = db.escrows.find((e) => e.orderId === order.id);
+    if (escrow && escrow.status === 'DISPUTE_HOLD') {
+      escrow.status = 'LOCKED';
+      escrow.releaseReason = 'Escrow hold lifted following autonomous delivery exception resolution.';
+    }
+
+    db.addAudit({
+      actionType: 'CARRIER_EXCEPTION',
+      summary: `[Exception Resolved] Resolved carrier anomaly for Order #${order.orderNumber}. Reinstated active transit SLA and released dispute hold on vendor escrow.`,
+      details: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        action,
+      },
+      source: 'MULTI_AGENT_DAG',
+    });
+
+    return {
+      success: true,
+      order,
+      message: `Exception resolved for Order #${order.orderNumber}.`,
     };
   }
 }

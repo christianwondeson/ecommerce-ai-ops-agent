@@ -1,4 +1,4 @@
-import { Product, Order, AuditLog } from '../types/index.js';
+import { Product, Order, AuditLog, FinancialEscrow } from '../types/index.js';
 
 export const initialProducts: Product[] = [
   {
@@ -15,6 +15,19 @@ export const initialProducts: Product[] = [
     isRestockFlagged: true,
     restockUrgency: 'CRITICAL',
     lastRestockFlaggedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+    predictive: {
+      burnRatePerDay: 2.8,
+      daysOfInventoryRemaining: 1.1,
+      stockoutRiskPercentage: 92,
+      leadTimeDays: 5,
+      vendorOtifScore: 98.2,
+      secondarySupplier: {
+        name: 'SoundWave Shenzhen Direct',
+        email: 'b2b@soundwave-direct.cn',
+        unitPrice: 134.50,
+        leadTimeDays: 3, // Faster emergency air freight
+      },
+    },
   },
   {
     id: 'prod-002',
@@ -30,6 +43,19 @@ export const initialProducts: Product[] = [
     isRestockFlagged: true,
     restockUrgency: 'MEDIUM',
     lastRestockFlaggedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    predictive: {
+      burnRatePerDay: 4.2,
+      daysOfInventoryRemaining: 1.4,
+      stockoutRiskPercentage: 86,
+      leadTimeDays: 7,
+      vendorOtifScore: 94.5,
+      secondarySupplier: {
+        name: 'Sidama Specialty Exporters',
+        email: 'orders@sidama-coffee.et',
+        unitPrice: 26.00,
+        leadTimeDays: 4,
+      },
+    },
   },
   {
     id: 'prod-003',
@@ -43,6 +69,19 @@ export const initialProducts: Product[] = [
     vendorName: 'Nordic Seating Solutions',
     unitPrice: 289.00,
     isRestockFlagged: false,
+    predictive: {
+      burnRatePerDay: 0.9,
+      daysOfInventoryRemaining: 20.0,
+      stockoutRiskPercentage: 8,
+      leadTimeDays: 12,
+      vendorOtifScore: 99.1,
+      secondarySupplier: {
+        name: 'EuroErgo Manufacturing GmbH',
+        email: 'sales@euroergo.de',
+        unitPrice: 295.00,
+        leadTimeDays: 8,
+      },
+    },
   },
   {
     id: 'prod-004',
@@ -58,6 +97,19 @@ export const initialProducts: Product[] = [
     isRestockFlagged: true,
     restockUrgency: 'CRITICAL',
     lastRestockFlaggedAt: new Date(Date.now() - 3600000 * 8).toISOString(),
+    predictive: {
+      burnRatePerDay: 1.6,
+      daysOfInventoryRemaining: 1.2,
+      stockoutRiskPercentage: 95,
+      leadTimeDays: 6,
+      vendorOtifScore: 91.0,
+      secondarySupplier: {
+        name: 'ClearLens Optoelectronics',
+        email: 'procurement@clearlens.tw',
+        unitPrice: 94.00,
+        leadTimeDays: 3,
+      },
+    },
   },
   {
     id: 'prod-005',
@@ -71,6 +123,19 @@ export const initialProducts: Product[] = [
     vendorName: 'KeebCraft Global',
     unitPrice: 115.00,
     isRestockFlagged: false,
+    predictive: {
+      burnRatePerDay: 3.1,
+      daysOfInventoryRemaining: 7.7,
+      stockoutRiskPercentage: 24,
+      leadTimeDays: 8,
+      vendorOtifScore: 96.8,
+      secondarySupplier: {
+        name: 'SwitchMaster Keyboards UK',
+        email: 'trade@switchmaster.co.uk',
+        unitPrice: 118.00,
+        leadTimeDays: 5,
+      },
+    },
   },
 ];
 
@@ -91,6 +156,9 @@ export const initialOrders: Order[] = [
     lastTrackingNote: 'Parcel safely deposited into resident smart parcel locker #14. Confirmation code sent to recipient phone.',
     shippedAt: new Date(Date.now() - 3600000 * 28).toISOString(),
     reconciledByAi: false,
+    exception: {
+      hasException: false,
+    },
   },
   {
     id: 'ord-1002',
@@ -104,10 +172,13 @@ export const initialOrders: Order[] = [
     status: 'IN_TRANSIT',
     courierCarrier: 'DHL Global Express',
     trackingNumber: 'DHL-391820491-US',
-    courierStatus: 'DELIVERED_HANDED_TO_RECIPIENT',
-    lastTrackingNote: 'Package delivered at front reception. Signed by: H. Carter.',
-    shippedAt: new Date(Date.now() - 3600000 * 36).toISOString(),
+    courierStatus: 'OUT_FOR_DELIVERY',
+    lastTrackingNote: 'Package is on delivery courier vehicle. ETA within 45 minutes.',
+    shippedAt: new Date(Date.now() - 3600000 * 18).toISOString(),
     reconciledByAi: false,
+    exception: {
+      hasException: false,
+    },
   },
   {
     id: 'ord-1003',
@@ -121,10 +192,16 @@ export const initialOrders: Order[] = [
     status: 'IN_TRANSIT',
     courierCarrier: 'FastRider City Dispatch',
     trackingNumber: 'FR-550291-ADD',
-    courierStatus: 'OUT_FOR_DELIVERY',
-    lastTrackingNote: 'Courier rider is currently en route. Estimated arrival in 25 minutes.',
-    shippedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+    courierStatus: 'EXCEPTION_HUB_CONGESTION',
+    lastTrackingNote: 'Delivery delayed due to central dispatch hub sorting congestion. Automated reroute in progress.',
+    shippedAt: new Date(Date.now() - 3600000 * 36).toISOString(),
     reconciledByAi: false,
+    exception: {
+      hasException: true,
+      exceptionType: 'HUB_DELAY',
+      severity: 'MEDIUM',
+      mitigationAction: 'AI rerouted package to Priority Dispatch Rider #09. Customer notified via automated SMS tracking update.',
+    },
   },
   {
     id: 'ord-1004',
@@ -144,6 +221,67 @@ export const initialOrders: Order[] = [
     deliveredAt: new Date(Date.now() - 3600000 * 20).toISOString(),
     reconciledByAi: true,
     reconciliationNotes: 'Auto-reconciled by AI Ops Specialist upon carrier proof-of-delivery confirmation.',
+    exception: {
+      hasException: false,
+    },
+  },
+];
+
+export const initialEscrows: FinancialEscrow[] = [
+  {
+    id: 'esc-001',
+    orderId: 'ord-1001',
+    orderNumber: 'ORD-2026-1001',
+    customerName: 'Marcus Vance',
+    vendorName: 'Apex Audio Supplies Ltd',
+    grossAmount: 129.99,
+    platformTake: 15.60, // 12%
+    gatewayFee: 4.07,    // 2.9% + 0.30
+    netVendorPayout: 110.32,
+    status: 'LOCKED',
+    lockedAt: new Date(Date.now() - 3600000 * 28).toISOString(),
+  },
+  {
+    id: 'esc-002',
+    orderId: 'ord-1002',
+    orderNumber: 'ORD-2026-1002',
+    customerName: 'Dr. Helen Carter',
+    vendorName: 'VisionTech Logistics',
+    grossAmount: 179.90,
+    platformTake: 21.59,
+    gatewayFee: 5.52,
+    netVendorPayout: 152.79,
+    status: 'LOCKED',
+    lockedAt: new Date(Date.now() - 3600000 * 18).toISOString(),
+  },
+  {
+    id: 'esc-003',
+    orderId: 'ord-1003',
+    orderNumber: 'ORD-2026-1003',
+    customerName: 'Dawit Mengistu',
+    vendorName: 'Highland Beans Direct',
+    grossAmount: 73.50,
+    platformTake: 8.82,
+    gatewayFee: 2.43,
+    netVendorPayout: 62.25,
+    status: 'DISPUTE_HOLD',
+    lockedAt: new Date(Date.now() - 3600000 * 36).toISOString(),
+    releaseReason: 'Escrow placed on temporary hold due to courier hub delay exception.',
+  },
+  {
+    id: 'esc-004',
+    orderId: 'ord-1004',
+    orderNumber: 'ORD-2026-1004',
+    customerName: 'Sarah Jenkins',
+    vendorName: 'Nordic Seating Solutions',
+    grossAmount: 289.00,
+    platformTake: 34.68,
+    gatewayFee: 8.68,
+    netVendorPayout: 245.64,
+    status: 'RELEASED',
+    lockedAt: new Date(Date.now() - 3600000 * 72).toISOString(),
+    releasedAt: new Date(Date.now() - 3600000 * 20).toISOString(),
+    releaseReason: 'Automated escrow release upon AI carrier proof validation.',
   },
 ];
 
@@ -152,11 +290,13 @@ export const initialAuditLogs: AuditLog[] = [
     id: 'audit-init-01',
     timestamp: new Date(Date.now() - 3600000 * 4).toISOString(),
     actionType: 'RESTOCK_FLAG',
-    summary: 'Flagged SKU AUDIO-ANC-001 as CRITICAL restock on merchant dashboard.',
+    summary: 'Flagged SKU AUDIO-ANC-001 as CRITICAL restock (1.1 Days of Inventory Remaining, 92% stockout risk).',
     details: {
       sku: 'AUDIO-ANC-001',
       unitsRemaining: 3,
       threshold: 10,
+      burnRatePerDay: 2.8,
+      stockoutRisk: '92%',
       urgency: 'CRITICAL',
     },
     source: 'REAL_TIME_INVENTORY',
@@ -164,21 +304,23 @@ export const initialAuditLogs: AuditLog[] = [
   {
     id: 'audit-init-02',
     timestamp: new Date(Date.now() - 3600000 * 20).toISOString(),
-    actionType: 'DELIVERY_RECONCILED',
-    summary: 'Reconciled Order #ORD-2026-1004 to DELIVERED from FedEx tracking confirmation.',
+    actionType: 'ESCROW_RELEASED',
+    summary: 'Released $245.64 vendor escrow payout to Nordic Seating Solutions following verified delivery of Order #ORD-2026-1004.',
     details: {
       orderId: 'ord-1004',
       orderNumber: 'ORD-2026-1004',
-      carrier: 'FedEx Freight Direct',
-      trackingProof: 'Delivered to recipient address front porch.',
+      gross: 289.00,
+      netPayout: 245.64,
+      platformTake: 34.68,
     },
-    source: 'COURIER_WEBHOOK',
+    source: 'MULTI_AGENT_DAG',
   },
 ];
 
 class DatabaseStore {
   public products: Product[] = [...initialProducts];
   public orders: Order[] = [...initialOrders];
+  public escrows: FinancialEscrow[] = [...initialEscrows];
   public auditLogs: AuditLog[] = [...initialAuditLogs];
 
   addAudit(log: Omit<AuditLog, 'id' | 'timestamp'>): AuditLog {
@@ -188,11 +330,57 @@ class DatabaseStore {
       ...log,
     };
     this.auditLogs.unshift(newLog);
-    // Keep max 100 audit items
     if (this.auditLogs.length > 100) {
       this.auditLogs = this.auditLogs.slice(0, 100);
     }
     return newLog;
+  }
+
+  recalculateProductMetrics(productId: string): Product | undefined {
+    const p = this.products.find((prod) => prod.id === productId);
+    if (!p) return undefined;
+
+    const daysRemaining = Number((p.currentStock / Math.max(0.5, p.predictive.burnRatePerDay)).toFixed(1));
+    const stockoutRisk = Math.min(
+      100,
+      Math.max(5, Math.round((1 - daysRemaining / Math.max(1, p.predictive.leadTimeDays)) * 100))
+    );
+
+    p.predictive.daysOfInventoryRemaining = daysRemaining;
+    p.predictive.stockoutRiskPercentage = p.currentStock === 0 ? 100 : stockoutRisk;
+
+    if (p.currentStock <= p.reorderThreshold) {
+      p.isRestockFlagged = true;
+      p.restockUrgency = p.currentStock === 0 ? 'CRITICAL' : daysRemaining <= 2 ? 'CRITICAL' : 'MEDIUM';
+    } else {
+      p.isRestockFlagged = false;
+      p.restockUrgency = undefined;
+    }
+
+    return p;
+  }
+
+  releaseEscrowForOrder(orderId: string, reason: string): FinancialEscrow | undefined {
+    const escrow = this.escrows.find((e) => e.orderId === orderId);
+    if (escrow && escrow.status !== 'RELEASED') {
+      escrow.status = 'RELEASED';
+      escrow.releasedAt = new Date().toISOString();
+      escrow.releaseReason = reason;
+
+      this.addAudit({
+        actionType: 'ESCROW_RELEASED',
+        summary: `[Financial Settlement Engine] Disbursed $${escrow.netVendorPayout.toFixed(2)} vendor escrow to ${escrow.vendorName} for Order #${escrow.orderNumber}. Platform retained $${escrow.platformTake.toFixed(2)}.`,
+        details: {
+          escrowId: escrow.id,
+          orderNumber: escrow.orderNumber,
+          netPayout: escrow.netVendorPayout,
+          platformTake: escrow.platformTake,
+          reason,
+        },
+        source: 'MULTI_AGENT_DAG',
+      });
+    }
+    return escrow;
   }
 }
 
