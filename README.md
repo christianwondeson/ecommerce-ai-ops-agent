@@ -1,5 +1,10 @@
 # ⚡ Autonomous E-Commerce Operations & Fulfillment Specialist
 
+[![CI Pipeline](https://github.com/christianwondeson/ecommerce-ai-ops-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/christianwondeson/ecommerce-ai-ops-agent/actions/workflows/ci.yml)
+[![Vercel Deployment](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)](https://vercel.com)
+[![Docker Ready](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](server/Dockerfile)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript)](package.json)
+
 > **Level 1 Assessment Project – Full Stack AI Web Developer**  
 > **Target Role:** E-Commerce Store & Vendor Operations Specialist  
 > **Target Industry:** Multi-Vendor E-Commerce & Retail Marketplaces  
@@ -148,6 +153,29 @@ npm run dev
    - Switch to the **AI Command Console & Audit Log** tab.
    - Click one of the suggested directives (e.g. *"Audit stock and flag critical low-inventory items"*).
    - Show Gemini 2.5 Flash reasoning through the prompt and executing the tools.
+
+---
+
+## 🌐 Production Deployment Guide
+
+### Option 1: Frontend on Vercel
+1. Import repository into [Vercel](https://vercel.com/new).
+2. Set **Root Directory** to `client` (or leave at root, uses `vercel.json`).
+3. Set Environment Variable:
+   - `VITE_API_BASE_URL`: URL of your deployed backend (e.g. `https://ecommerce-ai-ops-server.onrender.com`).
+4. Click **Deploy**.
+
+### Option 2: Backend on Render.com (Free Tier)
+1. In [Render Dashboard](https://dashboard.render.com), click **New +** $\rightarrow$ **Blueprint**.
+2. Connect your GitHub repository: `https://github.com/christianwondeson/ecommerce-ai-ops-agent`.
+3. Render will auto-detect `render.yaml`. Add your `GEMINI_API_KEY` and `RESEND_API_KEY` in the environment settings and click **Apply**.
+
+### Option 3: Docker / GCP Cloud Run (Always Free Tier)
+Deploy the container directly using the included multi-stage Dockerfile:
+```bash
+docker build -t ecommerce-ai-ops-server -f server/Dockerfile server/
+docker run -p 5001:5001 --env-file server/.env ecommerce-ai-ops-server
+```
 
 ---
 

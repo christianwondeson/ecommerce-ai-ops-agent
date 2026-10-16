@@ -1,0 +1,43 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-verify:
+    name: Build & Typecheck Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Root & Workspace Dependencies
+        run: npm install
+
+      - name: Install Server Dependencies
+        run: npm --prefix server install
+
+      - name: Install Client Dependencies
+        run: npm --prefix client install
+
+      - name: Typecheck & Compile Backend Server (TypeScript)
+        run: npm --prefix server run build
+
+      - name: Typecheck & Bundle Frontend Client (Vite + React)
+        run: npm --prefix client run build
+
+      - name: Verify Specification Artifacts
+        run: |
+          test -f docs/SOLUTION_DESIGN.md || exit 1
+          test -f docs/Solution_Design_Specification_AI_Ops_Specialist.pdf || exit 1
+          echo "All design and code verification checks passed successfully!"

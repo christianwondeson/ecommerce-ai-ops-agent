@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Send, Bot, User, Sparkles, Wrench, CheckCircle } from 'lucide-react';
+import { API_BASE } from '../config';
 
 interface Message {
   role: 'user' | 'model';
@@ -43,7 +44,7 @@ export const AgentChatConsole: React.FC<AgentChatConsoleProps> = ({ onRefreshDat
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/agent/chat', {
+      const response = await fetch(`${API_BASE}/api/agent/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

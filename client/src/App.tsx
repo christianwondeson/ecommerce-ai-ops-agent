@@ -7,6 +7,7 @@ import { AgentChatConsole } from './components/AgentChatConsole';
 import { LiveAuditFeed } from './components/LiveAuditFeed';
 import { Product, Order, AuditLog, SchedulerState } from './types';
 import { LayoutDashboard, MessageSquareCode, Sparkles } from 'lucide-react';
+import { API_BASE } from './config';
 
 export const App: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -19,10 +20,10 @@ export const App: React.FC = () => {
   const fetchAllData = async () => {
     try {
       const [invRes, ordRes, auditRes, schedRes] = await Promise.all([
-        fetch('/api/inventory'),
-        fetch('/api/orders'),
-        fetch('/api/audit-logs'),
-        fetch('/api/scheduler'),
+        fetch(`${API_BASE}/api/inventory`),
+        fetch(`${API_BASE}/api/orders`),
+        fetch(`${API_BASE}/api/audit-logs`),
+        fetch(`${API_BASE}/api/scheduler`),
       ]);
 
       const [invData, ordData, auditData, schedData] = await Promise.all([
@@ -51,7 +52,7 @@ export const App: React.FC = () => {
   const handleTriggerSweep = async () => {
     setIsSweeping(true);
     try {
-      const res = await fetch('/api/scheduler/trigger', { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/scheduler/trigger`, { method: 'POST' });
       await res.json();
       await fetchAllData();
     } catch (err) {
@@ -62,7 +63,7 @@ export const App: React.FC = () => {
   };
 
   const handleSimulateSale = async (productId: string) => {
-    await fetch('/api/inventory/simulate-sale', {
+    await fetch(`${API_BASE}/api/inventory/simulate-sale`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ productId, quantity: 1 }),
@@ -71,7 +72,7 @@ export const App: React.FC = () => {
   };
 
   const handleDispatchPO = async (productId: string) => {
-    await fetch('/api/inventory/po', {
+    await fetch(`${API_BASE}/api/inventory/po`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ productId }),
@@ -80,7 +81,7 @@ export const App: React.FC = () => {
   };
 
   const handleToggleFlag = async (productId: string, urgency: 'LOW' | 'MEDIUM' | 'CRITICAL') => {
-    await fetch('/api/inventory/flag', {
+    await fetch(`${API_BASE}/api/inventory/flag`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ productId, reason: 'Manually toggled from merchant operations console.', urgency }),
@@ -89,7 +90,7 @@ export const App: React.FC = () => {
   };
 
   const handleReconcileOrder = async (orderId: string, deliveryNotes: string) => {
-    await fetch('/api/orders/reconcile', {
+    await fetch(`${API_BASE}/api/orders/reconcile`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ orderId, deliveryNotes }),
@@ -98,7 +99,7 @@ export const App: React.FC = () => {
   };
 
   const handleSimulateWebhook = async (trackingNumber: string, carrier: string) => {
-    await fetch('/api/courier/webhook', {
+    await fetch(`${API_BASE}/api/courier/webhook`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

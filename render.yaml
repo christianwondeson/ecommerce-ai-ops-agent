@@ -1,0 +1,23 @@
+services:
+  # Express Backend Web Service
+  - type: web
+    name: ecommerce-ai-ops-server
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: SENDER_EMAIL
+        value: Autonomous Ops <onboarding@resend.dev>
+      - key: CRON_SCHEDULE
+        value: "*/15 * * * *"
