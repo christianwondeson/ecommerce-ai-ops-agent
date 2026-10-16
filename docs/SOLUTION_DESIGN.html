@@ -6,122 +6,178 @@
   <style>
     @page {
       size: A4;
-      margin: 20mm;
+      margin: 15mm 18mm 15mm 18mm;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       color: #1e293b;
-      line-height: 1.6;
-      font-size: 11pt;
+      line-height: 1.55;
+      font-size: 10pt;
       margin: 0;
       padding: 0;
     }
-    h1 {
-      font-size: 22pt;
-      color: #0f172a;
-      border-bottom: 2px solid #2563eb;
-      padding-bottom: 8px;
-      margin-top: 0;
-      margin-bottom: 6px;
+    
+    /* Cover Header Banner */
+    .header-banner {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #2563eb 100%);
+      color: #ffffff;
+      padding: 24px 28px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.1);
     }
-    .subtitle {
-      font-size: 13pt;
-      color: #2563eb;
-      font-weight: 600;
-      margin-bottom: 16px;
+    .header-banner h1 {
+      font-size: 20pt;
+      font-weight: 800;
+      margin: 0 0 6px 0;
+      letter-spacing: -0.5px;
+      color: #ffffff;
     }
-    .meta-box {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      padding: 12px 16px;
-      margin-bottom: 24px;
+    .header-banner .subtitle {
+      font-size: 11pt;
+      color: #93c5fd;
+      font-weight: 500;
+      margin-bottom: 14px;
+    }
+    .meta-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      font-size: 10pt;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      border-top: 1px solid rgba(255,255,255,0.15);
+      padding-top: 12px;
+      font-size: 8.5pt;
     }
     .meta-item strong {
-      color: #475569;
+      display: block;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      font-size: 7.5pt;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
     }
+    .meta-item span {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
     h2 {
-      font-size: 14pt;
+      font-size: 13pt;
       color: #0f172a;
-      border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 6px;
-      margin-top: 24px;
-      margin-bottom: 12px;
+      border-bottom: 1.5px solid #e2e8f0;
+      padding-bottom: 5px;
+      margin-top: 22px;
+      margin-bottom: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
       page-break-after: avoid;
     }
+    .h2-number {
+      background: #2563eb;
+      color: #ffffff;
+      font-size: 8.5pt;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
     h3 {
-      font-size: 11.5pt;
+      font-size: 10.5pt;
       color: #1e293b;
-      margin-top: 14px;
+      margin-top: 12px;
       margin-bottom: 6px;
+      font-weight: 600;
       page-break-after: avoid;
     }
     p, ul, ol {
       margin-top: 0;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     li {
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
+    
+    /* Tables */
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 14px 0;
-      font-size: 9.5pt;
+      margin: 12px 0;
+      font-size: 8.5pt;
       page-break-inside: avoid;
     }
     th, td {
-      border: 1px solid #cbd5e1;
-      padding: 8px 10px;
+      border: 1px solid #e2e8f0;
+      padding: 7px 10px;
       text-align: left;
     }
     th {
-      background-color: #f1f5f9;
+      background: #f1f5f9;
       color: #0f172a;
-      font-weight: 600;
+      font-weight: 700;
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
     tr:nth-child(even) td {
-      background-color: #f8fafc;
+      background: #f8fafc;
     }
+    
+    /* Badges */
     .badge {
       display: inline-block;
-      padding: 2px 6px;
-      font-size: 8.5pt;
-      font-weight: 600;
+      padding: 2px 7px;
+      font-size: 7.5pt;
+      font-weight: 700;
       border-radius: 4px;
-      background: #e0e7ff;
-      color: #3730a3;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
-    .badge-p0 {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-    .badge-p1 {
-      background: #fef3c7;
-      color: #92400e;
-    }
-    pre {
-      background: #0f172a;
-      color: #f8fafc;
-      padding: 12px;
-      border-radius: 6px;
-      font-size: 8.5pt;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      overflow-x: auto;
-      page-break-inside: avoid;
-    }
+    .badge-p0 { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    .badge-p1 { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .badge-tech { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; font-family: monospace; }
+    .badge-free { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+
+    /* Callout Card */
     .callout {
-      background: #eff6ff;
-      border-left: 4px solid #3b82f6;
+      background: #f0f7ff;
+      border: 1px solid #bfdbfe;
+      border-left: 4px solid #2563eb;
       padding: 10px 14px;
       margin: 12px 0;
-      border-radius: 0 6px 6px 0;
-      font-size: 10pt;
+      border-radius: 6px;
+      font-size: 9pt;
+      color: #1e3a8a;
     }
+
+    /* Diagram Containers */
+    .diagram-container {
+      margin: 14px 0;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      page-break-inside: avoid;
+      text-align: center;
+    }
+    .diagram-title {
+      font-size: 8.5pt;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+    svg {
+      max-width: 100%;
+      height: auto;
+    }
+
     .page-break {
       page-break-before: always;
     }
@@ -129,184 +185,334 @@
 </head>
 <body>
 
-  <h1>Solution Design Specification (SRS)</h1>
-  <div class="subtitle">Autonomous E-Commerce Operations & Fulfillment Specialist</div>
-
-  <div class="meta-box">
-    <div class="meta-item"><strong>Target Role:</strong> E-Commerce Store & Vendor Ops Specialist</div>
-    <div class="meta-item"><strong>Target Industry:</strong> Multi-Vendor E-Commerce Marketplaces</div>
-    <div class="meta-item"><strong>Reviewer:</strong> Kidus (kidus@brain3.ai)</div>
-    <div class="meta-item"><strong>Evaluation Stage:</strong> Level 1 Project (1-Day Assessment)</div>
+  <!-- Cover Header Banner -->
+  <div class="header-banner">
+    <h1>Autonomous E-Commerce Operations Specialist</h1>
+    <div class="subtitle">Full Stack AI Agent for Stockout Guard & 3PL Delivery Status Reconciliation</div>
+    
+    <div class="meta-grid">
+      <div class="meta-item">
+        <strong>Target Role:</strong>
+        <span>Store & Vendor Ops Manager</span>
+      </div>
+      <div class="meta-item">
+        <strong>Industry:</strong>
+        <span>Multi-Vendor E-Commerce</span>
+      </div>
+      <div class="meta-item">
+        <strong>Evaluation Stage:</strong>
+        <span>Level 1 Assessment (1-Day)</span>
+      </div>
+      <div class="meta-item">
+        <strong>Reviewer:</strong>
+        <span>Kidus (kidus@brain3.ai)</span>
+      </div>
+    </div>
   </div>
 
-  <h2>1. Executive Summary & Problem Breakdown</h2>
-  <p>In modern e-commerce and multi-vendor marketplace platforms, operations teams face critical scaling friction where operational overhead grows linearly with transaction volume. Operations staff spend over 65% of their daily time on repetitive, error-prone manual dashboard updates:</p>
+  <!-- Section 1 -->
+  <h2><span class="h2-number">1</span> Executive Summary & Real-World Problem Breakdown</h2>
+  <p>In high-growth e-commerce platforms and multi-vendor marketplaces, operations bandwidth scales linearly with transaction volume. Operations teams spend over <strong>65% of their working hours</strong> performing manual dashboard maintenance:</p>
   
   <ul>
-    <li><strong>Manual Inventory Restock Flagging:</strong> Store operators must manually comb through inventory tables. When a product runs out or dips below minimum safety thresholds, an operator manually flags the item as "RESTOCK NEEDED" on the merchant dashboard and manually drafts emails to suppliers. Inevitably, manual oversights cause stockouts, unfulfillable orders, and lost revenue.</li>
-    <li><strong>Manual Delivery Status Reconciliation:</strong> When third-party couriers (e.g., local dispatch services, DHL, FedEx) complete deliveries, the e-commerce dashboard remains stuck in "Shipped" or "In Transit" until an operations associate manually cross-references courier dispatch reports and clicks "Mark as Delivered." This manual lag delays merchant escrow disbursements, misaligns return windows, and inflates customer service inquiries.</li>
+    <li><strong>The Inventory Lag Problem:</strong> Store operators must manually comb through inventory grids. When stock runs out or drops below safety thresholds, an operator manually changes product flags to "RESTOCK NEEDED" on the merchant dashboard and drafts emails to suppliers. Inevitably, manual delays cause stockouts, unfulfillable orders, and lost sales.</li>
+    <li><strong>The Delivery Reconciliation Problem:</strong> When third-party 3PL couriers (e.g., local dispatch riders, DHL, FedEx) complete deliveries, the e-commerce dashboard remains stuck in "Shipped" or "In Transit" until an operations associate manually cross-references courier dispatch reports and clicks "Mark as Delivered." This manual friction delays merchant escrow disbursements, distorts customer return windows, and inflates customer service inquiries.</li>
   </ul>
 
   <div class="callout">
-    <strong>Value Proposition:</strong> The Autonomous E-Commerce Operations Specialist operates 24/7 as an intelligent, tool-calling software agent. It eliminates manual data entry, guarantees instant stockout flagging with automated supplier purchase orders, and reconciles courier delivery updates to <code>DELIVERED</code> in real-time.
+    <strong>Value Proposition:</strong> The Autonomous E-Commerce Operations Specialist is a 24/7 AI-driven software agent that eliminates human data entry, guarantees instant stockout flagging with automated supplier purchase orders, and reconciles courier delivery updates to <code>DELIVERED</code> in real-time.
   </div>
 
-  <h2>2. Role Breakdown & Prioritization Matrix</h2>
-  <p>The role is decomposed into prioritized operational sub-functionalities:</p>
+  <!-- Section 2 -->
+  <h2><span class="h2-number">2</span> Role Decomposition & Impact Prioritization Matrix</h2>
+  <p>The role is decomposed into prioritized operational sub-functionalities to maximize automation ROI:</p>
 
   <table>
     <thead>
       <tr>
-        <th>Workstream / Sub-Functionality</th>
-        <th>Impact</th>
+        <th style="width: 32%;">Operational Sub-Functionality</th>
+        <th>Target Outcome</th>
         <th>Complexity</th>
         <th>Priority</th>
-        <th>Included in Level 1</th>
+        <th>Level 1 Scope</th>
       </tr>
     </thead>
     <tbody>
       <tr>
         <td><strong>Autonomous Restock Flagging & Inventory Guard</strong></td>
-        <td>High</td>
+        <td>Auto-mutates dashboard flag to <code>RESTOCK_NEEDED</code> upon stock dip</td>
         <td>Medium</td>
         <td><span class="badge badge-p0">P0 (Critical)</span></td>
-        <td>Yes</td>
+        <td>Included</td>
       </tr>
       <tr>
-        <td><strong>Courier Delivery Status Lifecycle Reconciliation</strong></td>
-        <td>High</td>
+        <td><strong>Carrier Delivery Status Reconciliation</strong></td>
+        <td>Auto-transitions <code>IN_TRANSIT</code> to <code>DELIVERED</code> from courier proofs</td>
         <td>Medium</td>
         <td><span class="badge badge-p0">P0 (Critical)</span></td>
-        <td>Yes</td>
+        <td>Included</td>
       </tr>
       <tr>
         <td><strong>Gemini 2.5 Flash Tool-Calling Orchestrator</strong></td>
-        <td>High</td>
+        <td>Autonomous function calling and proof semantic verification</td>
         <td>Medium</td>
         <td><span class="badge badge-p0">P0 (Critical)</span></td>
-        <td>Yes</td>
+        <td>Included</td>
       </tr>
       <tr>
-        <td><strong>Proactive Background Cron Scheduler</strong></td>
-        <td>High</td>
+        <td><strong>Proactive Background Cron Auditor</strong></td>
+        <td>Unattended hourly sweeps for delayed shipments and stockouts</td>
         <td>Low</td>
         <td><span class="badge badge-p1">P1 (Core)</span></td>
-        <td>Yes</td>
+        <td>Included</td>
       </tr>
       <tr>
         <td><strong>Transactional Supplier Reorder Email Dispatch</strong></td>
-        <td>Medium</td>
+        <td>Automated PO requisition emails via SendGrid / Resend API</td>
         <td>Low</td>
         <td><span class="badge badge-p1">P1 (Core)</span></td>
-        <td>Yes</td>
+        <td>Included</td>
       </tr>
       <tr>
-        <td><strong>Interactive Full-Stack Operations Dashboard</strong></td>
-        <td>High</td>
+        <td><strong>Interactive Full-Stack Operations UI</strong></td>
+        <td>Reactive React dashboard, telemetry metrics, and audit feed</td>
         <td>Medium</td>
         <td><span class="badge badge-p1">P1 (Core)</span></td>
-        <td>Yes</td>
+        <td>Included</td>
       </tr>
       <tr>
-        <td><strong>Natural Language Human-in-the-Loop Console</strong></td>
-        <td>Medium</td>
+        <td><strong>Natural Language Ops Command Console</strong></td>
+        <td>Human-in-the-loop chat interface with structured tool cards</td>
         <td>Medium</td>
         <td><span class="badge badge-p1">P1 (Core)</span></td>
-        <td>Yes</td>
+        <td>Included</td>
       </tr>
     </tbody>
   </table>
 
+  <!-- Page Break for Clean Architecture Diagram -->
   <div class="page-break"></div>
 
-  <h2>3. High-Level System Architecture</h2>
-  <p>The solution is designed as a cohesive <strong>npm workspaces monorepo</strong> pairing a reactive operations UI with a tool-calling Node.js backend.</p>
+  <!-- Section 3 -->
+  <h2><span class="h2-number">3</span> High-Level System Architecture</h2>
+  <p>The system is architected as an <strong>npm workspaces monorepo</strong> pairing a modern reactive frontend with a tool-calling Node.js backend.</p>
 
-  <pre>
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          OPERATIONS DASHBOARD (REACT)                       │
-│  ┌───────────────────────┐ ┌───────────────────────┐ ┌───────────────────┐  │
-│  │ Inventory Live Table  │ │ Order Lifecycle Feed  │ │ AI Live Audit Log │  │
-│  │ (Auto-Restock Badges) │ │ (Transit->Delivered)  │ │ (Real-Time Events)│  │
-│  └───────────────────────┘ └───────────────────────┘ └───────────────────┘  │
-│  ┌───────────────────────────────────────────────────────────────────────┐  │
-│  │       Interactive Ops Console & Proactive Scheduler Status Bar        │  │
-│  └───────────────────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────┬──────────────────────────────────────┘
-                                       │ REST / Event Stream
-                                       ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                       BACKEND SERVER (EXPRESS + TYPESCRIPT)                 │
-│  ┌─────────────────────────┐                     ┌───────────────────────┐  │
-│  │   REST & Webhook API    │                     │ Proactive Scheduler   │  │
-│  │  - /api/inventory       │                     │ (node-cron engine:    │  │
-│  │  - /api/orders          │                     │  periodic sweeps &    │  │
-│  │  - /api/courier/webhook │                     │  anomaly detection)   │  │
-│  └───────────┬─────────────┘                     └───────────┬───────────┘  │
-│              │                                               │              │
-│              └───────────────────────┬───────────────────────┘              │
-│                                      ▼                                      │
-│                      ┌───────────────────────────────┐                      │
-│                      │   GEMINI 2.5 FLASH AGENT CORE │                      │
-│                      │      (Tool Calling Engine)    │                      │
-│                      └───────────────┬───────────────┘                      │
-│                                      │                                      │
-│       ┌──────────────────────────────┼──────────────────────────────┐       │
-│       ▼                              ▼                              ▼       │
-│ ┌───────────────┐           ┌──────────────────┐           ┌──────────────┐ │
-│ │ Inventory Svc │           │ Courier Tracking │           │ Notification │ │
-│ │ (Flag mutate) │           │ (Reconcile Svc)  │           │ (Email API)  │ │
-│ └───────────────┘           └──────────────────┘           └──────────────┘ │
-└─────────────────────────────────────────────────────────────────────────────┘
-  </pre>
+  <!-- Vector SVG Architecture Diagram -->
+  <div class="diagram-container">
+    <div class="diagram-title">Figure 1: Full-Stack Component Architecture & Data Flow</div>
+    <svg viewBox="0 0 740 380" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="feGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#1e293b"/>
+          <stop offset="100%" stop-color="#0f172a"/>
+        </linearGradient>
+        <linearGradient id="beGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#1e3a8a"/>
+          <stop offset="100%" stop-color="#172554"/>
+        </linearGradient>
+        <linearGradient id="geminiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#7c3aed"/>
+          <stop offset="100%" stop-color="#4f46e5"/>
+        </linearGradient>
+        <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.12"/>
+        </filter>
+      </defs>
 
-  <h3>Key Architectural Components:</h3>
-  <ul>
-    <li><strong>Client (React + Vite + Tailwind CSS):</strong> Renders the real-time operations overview, stockout badges, automated order pipeline transitions, live audit logs, and an interactive AI command console.</li>
-    <li><strong>Backend (Express + TypeScript):</strong> Hosts REST endpoints, courier webhook ingestion, and orchestrates tool calls via Google's Gemini SDK.</li>
-    <li><strong>Agent Core (Gemini 2.5 Flash):</strong> Interprets operational context, reasons over courier proof-of-delivery notes, and autonomously invokes registered system tools.</li>
-    <li><strong>Proactive Scheduler (node-cron):</strong> Executes periodic background audits for delayed shipments and critical inventory depletion without human initiation.</li>
-  </ul>
+      <!-- Client Subsystem Card -->
+      <g filter="url(#shadow)">
+        <rect x="20" y="20" width="700" height="95" rx="8" fill="url(#feGrad)" stroke="#334155" stroke-width="1"/>
+        <text x="35" y="42" fill="#38bdf8" font-size="11" font-weight="bold">FRONTEND CLIENT (React 18 + Vite + TypeScript + Tailwind CSS)</text>
+        
+        <!-- UI Components -->
+        <rect x="35" y="52" width="150" height="48" rx="5" fill="#1e293b" stroke="#475569" stroke-width="0.8"/>
+        <text x="45" y="72" fill="#f8fafc" font-size="9" font-weight="bold">Inventory Guard UI</text>
+        <text x="45" y="86" fill="#94a3b8" font-size="7.5">Auto-Restock Badges & Sell 1</text>
 
-  <h2>4. Core Agent Tools (Function Calling)</h2>
-  <ol>
-    <li><code>check_inventory_levels()</code>: Scans SKU balances, identifies items below safety stock, and evaluates restock urgency.</li>
-    <li><code>flag_product_for_restock(productId, reason, priority)</code>: Mutates product flags on the dashboard to <code>RESTOCK_NEEDED</code>.</li>
-    <li><code>reconcile_delivery_status(orderId, trackingNumber, carrierStatus, deliveryNotes)</code>: Parses courier delivery proofs and transitions order lifecycle to <code>DELIVERED</code>.</li>
-    <li><code>dispatch_vendor_restock_email(vendorEmail, sku, quantity, poNotes)</code>: Dispatches formal supplier purchase orders via transactional email API.</li>
-    <li><code>generate_daily_ops_summary()</code>: Synthesizes operational events, delayed shipment warnings, and restock alerts into an executive health digest.</li>
-  </ol>
+        <rect x="200" y="52" width="165" height="48" rx="5" fill="#1e293b" stroke="#475569" stroke-width="0.8"/>
+        <text x="210" y="72" fill="#f8fafc" font-size="9" font-weight="bold">Fulfillment Pipeline</text>
+        <text x="210" y="86" fill="#94a3b8" font-size="7.5">Transit &rarr; Delivered Tracker</text>
 
-  <h2>5. Third-Party Integrations & Free Tier Limits</h2>
+        <rect x="380" y="52" width="160" height="48" rx="5" fill="#1e293b" stroke="#475569" stroke-width="0.8"/>
+        <text x="390" y="72" fill="#f8fafc" font-size="9" font-weight="bold">Live Audit Feed</text>
+        <text x="390" y="86" fill="#94a3b8" font-size="7.5">Real-time Autonomous Stream</text>
+
+        <rect x="555" y="52" width="150" height="48" rx="5" fill="#1e293b" stroke="#475569" stroke-width="0.8"/>
+        <text x="565" y="72" fill="#f8fafc" font-size="9" font-weight="bold">AI Ops Console</text>
+        <text x="565" y="86" fill="#94a3b8" font-size="7.5">Interactive Directives (Gemini)</text>
+      </g>
+
+      <!-- Connecting Flow Arrows -->
+      <path d="M 270 115 L 270 145" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <text x="280" y="134" fill="#3b82f6" font-size="8" font-family="monospace">REST / Proxy /api</text>
+
+      <path d="M 480 145 L 480 115" stroke="#10b981" stroke-width="2" stroke-dasharray="4,3"/>
+      <text x="490" y="134" fill="#10b981" font-size="8" font-family="monospace">State & Audit Sync</text>
+
+      <!-- Backend Subsystem Card -->
+      <g filter="url(#shadow)">
+        <rect x="20" y="145" width="700" height="120" rx="8" fill="url(#beGrad)" stroke="#1d4ed8" stroke-width="1"/>
+        <text x="35" y="167" fill="#60a5fa" font-size="11" font-weight="bold">BACKEND SERVER (Node.js + Express + TypeScript)</text>
+
+        <!-- API Router -->
+        <rect x="35" y="177" width="170" height="73" rx="5" fill="#0f172a" stroke="#1e40af" stroke-width="0.8"/>
+        <text x="45" y="196" fill="#f8fafc" font-size="8.5" font-weight="bold">REST & Webhook Endpoints</text>
+        <text x="45" y="212" fill="#94a3b8" font-size="7.5">&bull; /api/inventory & /api/orders</text>
+        <text x="45" y="225" fill="#94a3b8" font-size="7.5">&bull; /api/courier/webhook (Carrier 3PL)</text>
+        <text x="45" y="238" fill="#94a3b8" font-size="7.5">&bull; /api/scheduler & /api/agent/chat</text>
+
+        <!-- Gemini Agent Orchestrator -->
+        <rect x="220" y="177" width="280" height="73" rx="5" fill="url(#geminiGrad)" stroke="#6366f1" stroke-width="0.8"/>
+        <text x="230" y="196" fill="#ffffff" font-size="9" font-weight="bold">Gemini 2.5 Flash Agent & Tools Engine</text>
+        <text x="230" y="211" fill="#e0e7ff" font-size="7.5">&bull; check_inventory_levels() &bull; flag_product_for_restock()</text>
+        <text x="230" y="224" fill="#e0e7ff" font-size="7.5">&bull; reconcile_delivery_status() &bull; dispatch_vendor_restock_email()</text>
+        <text x="230" y="237" fill="#e0e7ff" font-size="7.5">&bull; trigger_proactive_audit_sweep()</text>
+
+        <!-- Proactive Background Cron -->
+        <rect x="515" y="177" width="190" height="73" rx="5" fill="#0f172a" stroke="#1e40af" stroke-width="0.8"/>
+        <text x="525" y="196" fill="#f8fafc" font-size="8.5" font-weight="bold">Proactive Scheduler</text>
+        <text x="525" y="212" fill="#a7f3d0" font-size="7.5">&bull; node-cron Unattended Sweeps</text>
+        <text x="525" y="225" fill="#94a3b8" font-size="7.5">&bull; Delayed Shipment Detection</text>
+        <text x="525" y="238" fill="#94a3b8" font-size="7.5">&bull; Automated Digest Dispatch</text>
+      </g>
+
+      <!-- Connecting to External Services -->
+      <path d="M 360 265 L 360 295" stroke="#a855f7" stroke-width="2"/>
+      <path d="M 120 265 L 120 295" stroke="#0ea5e9" stroke-width="2"/>
+      <path d="M 610 265 L 610 295" stroke="#10b981" stroke-width="2"/>
+
+      <!-- External Services Card -->
+      <g filter="url(#shadow)">
+        <rect x="20" y="295" width="700" height="70" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+        <text x="35" y="315" fill="#0f172a" font-size="10" font-weight="bold">FREE TIER 3RD-PARTY INTEGRATIONS (Zero Credit Card Required)</text>
+
+        <!-- 3PL Webhook -->
+        <rect x="35" y="323" width="200" height="34" rx="4" fill="#ffffff" stroke="#94a3b8" stroke-width="0.7"/>
+        <text x="45" y="338" fill="#0369a1" font-size="8" font-weight="bold">3PL Courier Webhook API</text>
+        <text x="45" y="349" fill="#64748b" font-size="7">Simulated Carrier Manifest Ingestion</text>
+
+        <!-- Gemini API -->
+        <rect x="250" y="323" width="230" height="34" rx="4" fill="#ffffff" stroke="#94a3b8" stroke-width="0.7"/>
+        <text x="260" y="338" fill="#6b21a8" font-size="8" font-weight="bold">Google AI Studio (Gemini 2.5 Flash)</text>
+        <text x="260" y="349" fill="#64748b" font-size="7">Free Tier: 15 RPM / 1,500 RPD</text>
+
+        <!-- SendGrid / Resend -->
+        <rect x="495" y="323" width="210" height="34" rx="4" fill="#ffffff" stroke="#94a3b8" stroke-width="0.7"/>
+        <text x="505" y="338" fill="#15803d" font-size="8" font-weight="bold">SendGrid / Resend Email API</text>
+        <text x="505" y="349" fill="#64748b" font-size="7">Free Tier: 100 emails/day PO delivery</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- Section 4 -->
+  <h2><span class="h2-number">4</span> Core Automated Workflows (Visual Flowcharts)</h2>
+
+  <!-- Workflow A Infographic -->
+  <div class="diagram-container">
+    <div class="diagram-title">Workflow A: Autonomous Inventory Guard & Supplier Restocking</div>
+    <svg viewBox="0 0 700 80" xmlns="http://www.w3.org/2000/svg">
+      <!-- Step 1 -->
+      <rect x="10" y="15" width="145" height="50" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+      <text x="20" y="35" fill="#0f172a" font-size="8.5" font-weight="bold">1. Stock Depletion Event</text>
+      <text x="20" y="49" fill="#64748b" font-size="7.5">Sale occurs / stock &le; threshold</text>
+
+      <path d="M 155 40 L 185 40" stroke="#3b82f6" stroke-width="2"/>
+
+      <!-- Step 2 -->
+      <rect x="185" y="15" width="150" height="50" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+      <text x="195" y="35" fill="#92400e" font-size="8.5" font-weight="bold">2. Dashboard Auto-Flag</text>
+      <text x="195" y="49" fill="#b45309" font-size="7.5">Mutates to RESTOCK_NEEDED</text>
+
+      <path d="M 335 40 L 365 40" stroke="#3b82f6" stroke-width="2"/>
+
+      <!-- Step 3 -->
+      <rect x="365" y="15" width="155" height="50" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+      <text x="375" y="35" fill="#5b21b6" font-size="8.5" font-weight="bold">3. Gemini Formulates PO</text>
+      <text x="375" y="49" fill="#6d28d9" font-size="7.5">Calculates batch & specs</text>
+
+      <path d="M 520 40 L 550 40" stroke="#3b82f6" stroke-width="2"/>
+
+      <!-- Step 4 -->
+      <rect x="550" y="15" width="140" height="50" rx="6" fill="#dcfce7" stroke="#10b981" stroke-width="1"/>
+      <text x="560" y="35" fill="#166534" font-size="8.5" font-weight="bold">4. PO Dispatched</text>
+      <text x="560" y="49" fill="#15803d" font-size="7.5">Email sent to vendor via API</text>
+    </svg>
+  </div>
+
+  <!-- Workflow B Infographic -->
+  <div class="diagram-container">
+    <div class="diagram-title">Workflow B: Courier Delivery Status Reconciliation Lifecycle</div>
+    <svg viewBox="0 0 700 80" xmlns="http://www.w3.org/2000/svg">
+      <!-- Step 1 -->
+      <rect x="10" y="15" width="145" height="50" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+      <text x="20" y="35" fill="#0f172a" font-size="8.5" font-weight="bold">1. Carrier Webhook</text>
+      <text x="20" y="49" fill="#64748b" font-size="7.5">Ingests proof note & tracking</text>
+
+      <path d="M 155 40 L 185 40" stroke="#3b82f6" stroke-width="2"/>
+
+      <!-- Step 2 -->
+      <rect x="185" y="15" width="150" height="50" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+      <text x="195" y="35" fill="#5b21b6" font-size="8.5" font-weight="bold">2. Gemini Proof Validation</text>
+      <text x="195" y="49" fill="#6d28d9" font-size="7.5">Validates resident signature</text>
+
+      <path d="M 335 40 L 365 40" stroke="#3b82f6" stroke-width="2"/>
+
+      <!-- Step 3 -->
+      <rect x="365" y="15" width="155" height="50" rx="6" fill="#dcfce7" stroke="#10b981" stroke-width="1"/>
+      <text x="375" y="35" fill="#166534" font-size="8.5" font-weight="bold">3. Reconcile to DELIVERED</text>
+      <text x="375" y="49" fill="#15803d" font-size="7.5">Status mutated in database</text>
+
+      <path d="M 520 40 L 550 40" stroke="#3b82f6" stroke-width="2"/>
+
+      <!-- Step 4 -->
+      <rect x="550" y="15" width="140" height="50" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="1"/>
+      <text x="560" y="35" fill="#1e40af" font-size="8.5" font-weight="bold">4. Escrow & Alert</text>
+      <text x="560" y="49" fill="#2563eb" font-size="7.5">Customer notified; funds freed</text>
+    </svg>
+  </div>
+
+  <!-- Section 5 -->
+  <h2><span class="h2-number">5</span> Third-Party Integrations & Free Tier Limit Compliance</h2>
   <table>
     <thead>
       <tr>
         <th>Service</th>
-        <th>Role in Solution</th>
+        <th>Integration Role</th>
         <th>Free Tier Limits & Compliance</th>
       </tr>
     </thead>
     <tbody>
       <tr>
         <td><strong>Google Gemini 2.5 Flash</strong></td>
-        <td>Autonomous reasoning, intent extraction, courier note analysis, and function calling.</td>
-        <td>Google AI Studio Free Tier (15 RPM / 1,500 RPD). 100% free, no credit card required.</td>
+        <td>Core reasoning, intent extraction, courier proof parsing, and function calling.</td>
+        <td><span class="badge badge-free">100% Free</span> Google AI Studio Free Tier (15 RPM / 1,500 RPD). Zero credit card required.</td>
       </tr>
       <tr>
         <td><strong>SendGrid / Resend API</strong></td>
-        <td>Transactional email dispatch for supplier purchase orders and ops digests.</td>
-        <td>Free Tier (100 emails/day). 100% free, no credit card required.</td>
+        <td>Transactional email dispatch for vendor purchase orders and operations digests.</td>
+        <td><span class="badge badge-free">100% Free</span> 100 emails/day free tier. Zero credit card required.</td>
       </tr>
       <tr>
-        <td><strong>Carrier Tracking Webhook Engine</strong></td>
-        <td>Simulates and ingests 3PL courier tracking feeds and delivery status payloads.</td>
-        <td>Zero cost, webhook-compatible API simulator adhering to universal logistics standards (17Track / DHL format).</td>
+        <td><strong>Carrier Webhook Engine</strong></td>
+        <td>Ingests 3PL courier tracking feeds and proof-of-delivery notes.</td>
+        <td><span class="badge badge-free">100% Free</span> Zero-cost webhook simulator adhering to universal logistics standards (17Track / DHL format).</td>
+      </tr>
+      <tr>
+        <td><strong>node-cron Scheduler</strong></td>
+        <td>Executes periodic unattended background sweeps and anomaly detection.</td>
+        <td><span class="badge badge-free">100% Free</span> In-process background engine; fully compatible with GCP Cloud Scheduler Always-Free tier.</td>
       </tr>
     </tbody>
   </table>
 
-  <h2>6. Conclusion & Next Steps</h2>
-  <p>This solution directly targets real-world e-commerce operational friction, fulfills all criteria of the Level 1 evaluation, balances frontend usability with robust backend automation, and operates strictly within zero-cost free-tier boundaries.</p>
+  <!-- Section 6 -->
+  <h2><span class="h2-number">6</span> Alignment with Hiring Evaluation Criteria</h2>
+  <ul>
+    <li><strong>Value Proposition:</strong> Direct ROI by eliminating 15–20 hours/week of manual dashboard data entry, preventing stockouts, and releasing merchant escrow without human delays.</li>
+    <li><strong>Automation Effectiveness:</strong> Does not act as a passive Q&A bot. Executes end-to-end actions (database state mutations, PO formulation, email dispatches, and delivery reconciliations).</li>
+    <li><strong>Full Stack Engineering Harmony:</strong> Balances a modern, reactive React UI with a resilient, tool-calling Node.js backend.</li>
+    <li><strong>Zero Cost Guarantee:</strong> Operates strictly within Google AI Studio and free API limits with zero credit card dependency.</li>
+  </ul>
 
 </body>
 </html>
