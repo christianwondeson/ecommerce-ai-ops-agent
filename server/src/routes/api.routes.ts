@@ -4,6 +4,8 @@ import { inventoryService } from '../services/inventory.service.js';
 import { courierService } from '../services/courier.service.js';
 import { schedulerService } from '../services/scheduler.service.js';
 import { scenariosService } from '../services/scenarios.service.js';
+import { checkoutService } from '../services/checkout.service.js';
+import { emailService } from '../services/email.service.js';
 import { processAgentConversation } from '../agent/gemini.js';
 
 export const apiRouter = Router();
@@ -125,6 +127,67 @@ apiRouter.post('/scenarios/supplier-failover', async (req, res) => {
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message });
   }
+});
+
+// ==========================================
+// CHECKOUT SESSIONS & PAYMENT RECONCILIATION
+// ==========================================
+apiRouter.get('/checkout/sessions', (req, res) => {
+  res.json({ success: true, sessions: checkoutService.getAllSessions() });
+});
+
+apiRouter.post('/checkout/create', (req, res) => {
+  const { customerName, customerEmail, items } = req.body;
+  if (!customerName || !items || !Array.isArray(items)) {
+    return res.status(400).json({ success: false, message: 'Invalid checkout parameters.' });
+  }
+  const result = checkoutService.createCheckoutSession({
+    customerName,
+    customerEmail: customerEmail || 'guest@customer.com',
+    items,
+  });
+  res.json(result);
+});
+
+apiRouter.post('/checkout/callback', async (req, res) => {
+  const { sessionId, status } = req.body;
+  try {
+    const result = await checkoutService.handleClientCallback(sessionId, status || 'success');
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+apiRouter.post('/checkout/simulate/clean', async (req, res) => {
+  try {
+    const result = await checkoutService.simulateCleanCheckout();
+    res.json({ success: true, ...result });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+apiRouter.post('/checkout/simulate/race-condition', async (req, res) => {
+  try {
+    const result = await checkoutService.simulateCallbackRaceCondition();
+    res.json({ success: true, ...result });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+apiRouter.post('/checkout/simulate/orphan-timeout', (req, res) => {
+  try {
+    const result = checkoutService.simulateOrphanTimeout();
+    res.json({ success: true, ...result });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+apiRouter.get('/emails/sent', (req, res) => {
+  res.json({ success: true, emails: emailService.sentEmails });
 });
 
 // ==========================================

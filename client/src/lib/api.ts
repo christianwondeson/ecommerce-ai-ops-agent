@@ -1,6 +1,6 @@
 import { API_BASE } from "../config";
 export * from "../types";
-import type { Product, Order, AuditLog, SchedulerState, FinancialEscrow } from "../types";
+import type { Product, Order, AuditLog, SchedulerState, FinancialEscrow, CheckoutSession } from "../types";
 
 export const api = {
   async getInventory(): Promise<Product[]> {
@@ -135,6 +135,42 @@ export const api = {
       body: JSON.stringify({ productId }),
     });
     return await res.json();
+  },
+
+  async getCheckoutSessions(): Promise<CheckoutSession[]> {
+    const res = await fetch(`${API_BASE}/api/checkout/sessions`);
+    const data = await res.json();
+    return data.sessions || [];
+  },
+
+  async handleCheckoutCallback(sessionId: string, status: 'success' | 'pending' | 'failed' = 'success'): Promise<unknown> {
+    const res = await fetch(`${API_BASE}/api/checkout/callback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, status }),
+    });
+    return await res.json();
+  },
+
+  async simulateCleanCheckout(): Promise<unknown> {
+    const res = await fetch(`${API_BASE}/api/checkout/simulate/clean`, { method: 'POST' });
+    return await res.json();
+  },
+
+  async simulateCallbackRaceCondition(): Promise<unknown> {
+    const res = await fetch(`${API_BASE}/api/checkout/simulate/race-condition`, { method: 'POST' });
+    return await res.json();
+  },
+
+  async simulateOrphanTimeout(): Promise<unknown> {
+    const res = await fetch(`${API_BASE}/api/checkout/simulate/orphan-timeout`, { method: 'POST' });
+    return await res.json();
+  },
+
+  async getSentEmails(): Promise<unknown[]> {
+    const res = await fetch(`${API_BASE}/api/emails/sent`);
+    const data = await res.json();
+    return data.emails || [];
   },
 
   async chat(

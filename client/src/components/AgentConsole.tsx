@@ -4,11 +4,13 @@ import { api } from "@/lib/api";
 
 type Msg = { role: "user" | "model"; text: string; tools?: string[] | undefined };
 const PROMPTS = [
+  "What is the stock of ELEC-CAM-004 and who is the vendor?",
+  "Heal pending checkout callback sessions & reconcile payment gateway",
+  "Reap orphaned checkout reservations and restore catalog stock",
   "Forecast days of inventory remaining (DIR) & stockout risks",
   "Audit marketplace escrow ledger & locked vendor payouts",
   "Simulate Black Friday flash sale surge across catalog",
   "Resolve courier delivery exceptions & lift escrow holds",
-  "Engage backup supplier failover for depleted inventory",
   "Reconcile in-transit orders & disburse vendor escrow",
 ];
 

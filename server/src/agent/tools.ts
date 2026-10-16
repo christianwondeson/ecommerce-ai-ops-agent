@@ -4,6 +4,7 @@ import { inventoryService } from '../services/inventory.service.js';
 import { courierService } from '../services/courier.service.js';
 import { schedulerService } from '../services/scheduler.service.js';
 import { scenariosService } from '../services/scenarios.service.js';
+import { checkoutService } from '../services/checkout.service.js';
 
 export const agentToolDeclarations: FunctionDeclaration[] = [
   {
@@ -160,6 +161,28 @@ export const agentToolDeclarations: FunctionDeclaration[] = [
       required: ['scenario'],
     },
   },
+  {
+    name: 'reconcile_checkout_payment',
+    description: 'Reconciles a pending or stalled checkout callback session with payment gateway, confirms order, and locks escrow.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        sessionId: {
+          type: SchemaType.STRING,
+          description: 'Checkout session ID (e.g. "cs_live_902c4d")',
+        },
+      },
+      required: ['sessionId'],
+    },
+  },
+  {
+    name: 'release_orphan_checkout_stock',
+    description: 'Scans for abandoned checkout sessions and restores reserved inventory stock back to live catalog.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {},
+    },
+  },
 ];
 
 export async function executeAgentTool(name: string, args: any): Promise<any> {
@@ -276,6 +299,14 @@ export async function executeAgentTool(name: string, args: any): Promise<any> {
         return await scenariosService.triggerSupplierFailover();
       }
       throw new Error(`Unknown stress scenario: ${args.scenario}`);
+    }
+
+    case 'reconcile_checkout_payment': {
+      return await checkoutService.handleClientCallback(args.sessionId, 'success');
+    }
+
+    case 'release_orphan_checkout_stock': {
+      return checkoutService.reconcileOrphanSessions();
     }
 
     default:

@@ -85,6 +85,27 @@ export interface FinancialEscrow {
   releaseReason?: string;
 }
 
+export type CheckoutStatus =
+  | 'RESERVED_PENDING'
+  | 'CALLBACK_PENDING'
+  | 'PAYMENT_CONFIRMED'
+  | 'ORPHAN_EXPIRED_HEALED';
+
+export interface CheckoutSession {
+  id: string;
+  sessionId: string;
+  customerName: string;
+  customerEmail: string;
+  items: OrderItem[];
+  totalAmount: number;
+  status: CheckoutStatus;
+  createdAt: string;
+  gatewayReference: string;
+  stockReserved: boolean;
+  reconciliationNotes?: string;
+  confirmedOrderId?: string;
+}
+
 export type AuditActionType =
   | 'RESTOCK_FLAG'
   | 'PO_DISPATCHED'
@@ -94,7 +115,10 @@ export type AuditActionType =
   | 'SCENARIO_SIMULATION'
   | 'CARRIER_EXCEPTION'
   | 'ESCROW_RELEASED'
-  | 'SUPPLIER_FAILOVER';
+  | 'SUPPLIER_FAILOVER'
+  | 'CHECKOUT_RESERVED'
+  | 'PAYMENT_RECONCILED'
+  | 'ORPHAN_STOCK_RESTORED';
 
 export interface AuditLog {
   id: string;

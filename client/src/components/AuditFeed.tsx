@@ -10,6 +10,9 @@ const color: Record<string, string> = {
   CARRIER_EXCEPTION: "text-destructive font-bold",
   ESCROW_RELEASED: "text-ok font-bold",
   SUPPLIER_FAILOVER: "text-caution font-bold",
+  CHECKOUT_RESERVED: "text-caution",
+  PAYMENT_RECONCILED: "text-ok font-bold",
+  ORPHAN_STOCK_RESTORED: "text-primary font-bold",
 };
 
 export function AuditFeed({ logs }: { logs: AuditLog[] }) {

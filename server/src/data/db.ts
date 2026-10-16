@@ -1,4 +1,4 @@
-import { Product, Order, AuditLog, FinancialEscrow } from '../types/index.js';
+import { Product, Order, AuditLog, FinancialEscrow, CheckoutSession } from '../types/index.js';
 
 export const initialProducts: Product[] = [
   {
@@ -317,10 +317,54 @@ export const initialAuditLogs: AuditLog[] = [
   },
 ];
 
+export const initialCheckoutSessions: CheckoutSession[] = [
+  {
+    id: 'cs-001',
+    sessionId: 'cs_live_901a8b',
+    customerName: 'Marcus Vance',
+    customerEmail: 'marcus.vance@example.com',
+    items: [{ sku: 'AUDIO-ANC-001', name: 'AcousticPro Wireless Headphones', quantity: 1, price: 129.99 }],
+    totalAmount: 129.99,
+    status: 'PAYMENT_CONFIRMED',
+    createdAt: new Date(Date.now() - 3600000 * 28).toISOString(),
+    gatewayReference: 'ch_3N8zK0Lkd89123',
+    stockReserved: false,
+    confirmedOrderId: 'ord-1001',
+    reconciliationNotes: 'Webhook and callback synced seamlessly within 340ms.',
+  },
+  {
+    id: 'cs-002',
+    sessionId: 'cs_live_902c4d',
+    customerName: 'Senait Bekele',
+    customerEmail: 'senait.bekele@tech-addis.et',
+    items: [{ sku: 'FOOD-COF-002', name: 'Artisan Ethiopian Yirgacheffe (1kg)', quantity: 2, price: 24.50 }],
+    totalAmount: 49.00,
+    status: 'CALLBACK_PENDING',
+    createdAt: new Date(Date.now() - 60000 * 4).toISOString(),
+    gatewayReference: 'ch_telebirr_882910',
+    stockReserved: true,
+    reconciliationNotes: 'Client returned via callback. Awaiting gateway clearance or autonomous verification.',
+  },
+  {
+    id: 'cs-003',
+    sessionId: 'cs_live_903e1f',
+    customerName: 'Thomas Wright',
+    customerEmail: 'thomas.w@globalconsulting.com',
+    items: [{ sku: 'ELEC-CAM-004', name: 'UltraGlow 4K Webcam', quantity: 1, price: 89.95 }],
+    totalAmount: 89.95,
+    status: 'RESERVED_PENDING',
+    createdAt: new Date(Date.now() - 60000 * 18).toISOString(),
+    gatewayReference: 'ch_stripe_pending_4401',
+    stockReserved: true,
+    reconciliationNotes: 'Customer abandoned payment window. Reserved stock subject to auto-reaper release.',
+  },
+];
+
 class DatabaseStore {
   public products: Product[] = [...initialProducts];
   public orders: Order[] = [...initialOrders];
   public escrows: FinancialEscrow[] = [...initialEscrows];
+  public checkoutSessions: CheckoutSession[] = [...initialCheckoutSessions];
   public auditLogs: AuditLog[] = [...initialAuditLogs];
 
   addAudit(log: Omit<AuditLog, 'id' | 'timestamp'>): AuditLog {

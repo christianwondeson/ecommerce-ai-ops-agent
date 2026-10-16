@@ -8,6 +8,7 @@ import { Orders } from "./components/Orders";
 import { AuditFeed } from "./components/AuditFeed";
 import { AgentConsole } from "./components/AgentConsole";
 import { EscrowLedger } from "./components/EscrowLedger";
+import { CheckoutReconciliation } from "./components/CheckoutReconciliation";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,7 +20,7 @@ const queryClient = new QueryClient({
 
 function Dashboard() {
   const qc = useQueryClient();
-  const [activeView, setActiveView] = useState<"ALL" | "OPS" | "DISPATCH" | "ESCROW">("ALL");
+  const [activeView, setActiveView] = useState<"ALL" | "OPS" | "DISPATCH" | "ESCROW" | "CHECKOUT">("ALL");
 
   const { data: products = [] } = useQuery({
     queryKey: ["inventory"],
@@ -34,6 +35,11 @@ function Dashboard() {
   const { data: escrows = [] } = useQuery({
     queryKey: ["escrows"],
     queryFn: () => api.getEscrows(),
+  });
+
+  const { data: checkoutSessions = [] } = useQuery({
+    queryKey: ["checkoutSessions"],
+    queryFn: () => api.getCheckoutSessions(),
   });
 
   const { data: auditLogs = [] } = useQuery({
@@ -59,6 +65,7 @@ function Dashboard() {
   const inTransitCount = orders.filter((o) => o.status === "IN_TRANSIT").length;
   const deliveredCount = orders.filter((o) => o.status === "DELIVERED").length;
   const exceptionCount = orders.filter((o) => o.exception?.hasException).length;
+  const pendingCheckoutCount = checkoutSessions.filter((s) => s.status === "CALLBACK_PENDING" || s.status === "RESERVED_PENDING").length;
 
   return (
     <div className="mx-auto min-h-screen max-w-7xl px-4 py-6 font-sans">
@@ -78,7 +85,7 @@ function Dashboard() {
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            DIR stockout predictive forecasting · Courier exception rerouting · 12% marketplace escrow disburser
+            DIR stockout predictive forecasting · Courier exception rerouting · Checkout callback healer · 12% marketplace escrow
           </p>
         </div>
 
@@ -101,6 +108,11 @@ function Dashboard() {
             </div>
             <div className="h-3 w-px bg-line" />
             <div>
+              <span className="text-muted-foreground">CHECKOUT LAG: </span>
+              <strong className={pendingCheckoutCount > 0 ? "text-caution" : "text-foreground"}>{pendingCheckoutCount}</strong>
+            </div>
+            <div className="h-3 w-px bg-line" />
+            <div>
               <span className="text-muted-foreground">RECONCILED: </span>
               <strong className="text-ok">{deliveredCount}</strong>
             </div>
@@ -120,18 +132,18 @@ function Dashboard() {
       <ScenarioBar />
 
       {/* VIEW TABS */}
-      <div className="mb-6 flex border-b border-line font-mono text-xs">
+      <div className="mb-6 flex border-b border-line font-mono text-xs overflow-x-auto">
         <button
           onClick={() => setActiveView("ALL")}
-          className={`border-b-2 px-4 py-2 uppercase tracking-wider transition-colors ${
+          className={`border-b-2 px-4 py-2 uppercase tracking-wider transition-colors whitespace-nowrap ${
             activeView === "ALL" ? "border-primary text-primary font-bold" : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
-          All Stations (01–05)
+          All Stations (01–06)
         </button>
         <button
           onClick={() => setActiveView("OPS")}
-          className={`border-b-2 px-4 py-2 uppercase tracking-wider transition-colors ${
+          className={`border-b-2 px-4 py-2 uppercase tracking-wider transition-colors whitespace-nowrap ${
             activeView === "OPS" ? "border-primary text-primary font-bold" : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -139,7 +151,7 @@ function Dashboard() {
         </button>
         <button
           onClick={() => setActiveView("DISPATCH")}
-          className={`border-b-2 px-4 py-2 uppercase tracking-wider transition-colors ${
+          className={`border-b-2 px-4 py-2 uppercase tracking-wider transition-colors whitespace-nowrap ${
             activeView === "DISPATCH" ? "border-primary text-primary font-bold" : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -147,11 +159,19 @@ function Dashboard() {
         </button>
         <button
           onClick={() => setActiveView("ESCROW")}
-          className={`border-b-2 px-4 py-2 uppercase tracking-wider transition-colors ${
+          className={`border-b-2 px-4 py-2 uppercase tracking-wider transition-colors whitespace-nowrap ${
             activeView === "ESCROW" ? "border-primary text-primary font-bold" : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           05 Escrow Ledger
+        </button>
+        <button
+          onClick={() => setActiveView("CHECKOUT")}
+          className={`border-b-2 px-4 py-2 uppercase tracking-wider transition-colors whitespace-nowrap ${
+            activeView === "CHECKOUT" ? "border-primary text-primary font-bold" : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          06 Checkout Gateway
         </button>
       </div>
 
@@ -166,7 +186,8 @@ function Dashboard() {
             <AuditFeed logs={auditLogs} />
             <AgentConsole />
           </div>
-          <div>
+          <div className="space-y-6">
+            <CheckoutReconciliation sessions={checkoutSessions} />
             <EscrowLedger escrows={escrows} />
           </div>
         </div>
@@ -189,6 +210,12 @@ function Dashboard() {
       {activeView === "ESCROW" && (
         <div className="space-y-6">
           <EscrowLedger escrows={escrows} />
+        </div>
+      )}
+
+      {activeView === "CHECKOUT" && (
+        <div className="space-y-6">
+          <CheckoutReconciliation sessions={checkoutSessions} />
         </div>
       )}
 
