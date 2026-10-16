@@ -24,6 +24,7 @@ class EmailService {
     // 1. Try Resend if configured
     if (this.resendApiKey) {
       try {
+        const fromAddress = process.env.SENDER_EMAIL || 'onboarding@resend.dev';
         const response = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
@@ -31,16 +32,16 @@ class EmailService {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: this.senderEmail,
+            from: fromAddress,
             to: [options.to],
             subject: options.subject,
             html: options.htmlContent,
           }),
         });
 
+        const data: any = await response.json();
         if (response.ok) {
-          const data: any = await response.json();
-          console.log(`[EmailService] Resend dispatched to ${options.to} (ID: ${data.id})`);
+          console.log(`[EmailService] Resend live email dispatched to ${options.to} (Message ID: ${data.id})`);
           return {
             success: true,
             messageId: data.id,
@@ -48,9 +49,11 @@ class EmailService {
             timestamp,
             recipient: options.to,
           };
+        } else {
+          console.warn(`[EmailService] Resend API notice: ${data.message || JSON.stringify(data)}. Falling back to safe simulation.`);
         }
-      } catch (err) {
-        console.warn('[EmailService] Resend delivery failed, falling back to mock:', err);
+      } catch (err: any) {
+        console.warn('[EmailService] Resend delivery network issue, falling back to mock:', err.message);
       }
     }
 

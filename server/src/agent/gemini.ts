@@ -49,9 +49,9 @@ export async function processAgentConversation(
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Use gemini-2.5-flash or gemini-1.5-flash
+    // Uses Google's latest active flash model verified with user API key
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-3.5-flash-lite',
       systemInstruction: SYSTEM_INSTRUCTION,
       tools: [{ functionDeclarations: agentToolDeclarations }],
     });
