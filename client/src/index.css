@@ -1,19 +1,135 @@
+@import url('https://fonts.googleapis.com/css2?family=Familjen+Grotesk:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;600;700&family=Unbounded:wght@400;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --radius: 2px;
+  --background: oklch(0.17 0.008 60);
+  --foreground: oklch(0.93 0.02 85);
+  --card: oklch(0.205 0.01 60);
+  --card-foreground: oklch(0.93 0.02 85);
+  --popover: oklch(0.22 0.01 60);
+  --popover-foreground: oklch(0.93 0.02 85);
+  --primary: oklch(0.7 0.19 45);
+  --primary-foreground: oklch(0.17 0.008 60);
+  --secondary: oklch(0.26 0.012 60);
+  --secondary-foreground: oklch(0.93 0.02 85);
+  --muted: oklch(0.24 0.01 60);
+  --muted-foreground: oklch(0.64 0.025 80);
+  --accent: oklch(0.86 0.17 120);
+  --accent-foreground: oklch(0.17 0.008 60);
+  --destructive: oklch(0.63 0.22 25);
+  --destructive-foreground: oklch(0.96 0.01 85);
+  --signal: oklch(0.7 0.19 45);
+  --caution: oklch(0.84 0.15 90);
+  --ok: oklch(0.86 0.17 120);
+  --line: oklch(0.32 0.012 60);
+  --border: oklch(0.3 0.012 60);
+  --input: oklch(0.3 0.012 60);
+  --ring: oklch(0.7 0.19 45);
+  --grid: color-mix(in oklab, var(--foreground) 5%, transparent);
+}
+
+@layer base {
+  * { border-color: var(--line); }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: "Familjen Grotesk", system-ui, sans-serif;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 32px 32px;
+    min-height: 100vh;
+  }
+  ::selection { background: var(--primary); color: var(--primary-foreground); }
+}
+
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  position: relative;
+}
+
+.label-tag {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.hazard {
+  background: repeating-linear-gradient(-45deg, var(--primary) 0 10px, var(--background) 10px 20px);
+}
+
+.btn-op {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--line);
+  padding: 0.35rem 0.6rem;
+  background: transparent;
+  color: var(--foreground);
+  transition: all 150ms;
+}
+.btn-op:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.btn-op:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-signal {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 0.5rem 0.9rem;
+  font-weight: 700;
+  box-shadow: 3px 3px 0 var(--foreground);
+  transition: all 120ms;
+  border: none;
+}
+.btn-signal:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--foreground);
+}
+.btn-signal:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--foreground);
+}
+.btn-signal:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes blink { 50% { opacity: 0.2; } }
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes slidein { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+.animate-blink { animation: blink 1.2s steps(2) infinite; }
+.animate-ticker { animation: ticker 40s linear infinite; }
+.animate-slidein { animation: slidein 300ms ease-out both; }
+
 /* Custom scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: var(--background);
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 3px;
+  background: var(--line);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: var(--muted-foreground);
 }

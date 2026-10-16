@@ -1,194 +1,177 @@
-import React, { useState, useEffect } from 'react';
-import { Header } from './components/Header';
-import { MetricsCards } from './components/MetricsCards';
-import { InventoryTable } from './components/InventoryTable';
-import { OrdersPipeline } from './components/OrdersPipeline';
-import { AgentChatConsole } from './components/AgentChatConsole';
-import { LiveAuditFeed } from './components/LiveAuditFeed';
-import { Product, Order, AuditLog, SchedulerState } from './types';
-import { LayoutDashboard, MessageSquareCode, Sparkles } from 'lucide-react';
-import { API_BASE } from './config';
+import { useState } from "react";
+import { QueryClient, QueryClientProvider, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Toaster, toast } from "sonner";
+import { api } from "@/lib/api";
+import { Inventory } from "./components/Inventory";
+import { Orders } from "./components/Orders";
+import { AuditFeed } from "./components/AuditFeed";
+import { AgentConsole } from "./components/AgentConsole";
 
-export const App: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [schedulerState, setSchedulerState] = useState<SchedulerState | null>(null);
-  const [isSweeping, setIsSweeping] = useState(false);
-  const [activeTab, setActiveTab] = useState<'OPERATIONS' | 'AI_CONSOLE'>('OPERATIONS');
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchInterval: 10000, // Poll every 10s for real-time telemetry
+    },
+  },
+});
 
-  const fetchAllData = async () => {
-    try {
-      const [invRes, ordRes, auditRes, schedRes] = await Promise.all([
-        fetch(`${API_BASE}/api/inventory`),
-        fetch(`${API_BASE}/api/orders`),
-        fetch(`${API_BASE}/api/audit-logs`),
-        fetch(`${API_BASE}/api/scheduler`),
-      ]);
+function Dashboard() {
+  const qc = useQueryClient();
+  const [activeView, setActiveView] = useState<"ALL" | "OPS" | "DISPATCH">("ALL");
 
-      const [invData, ordData, auditData, schedData] = await Promise.all([
-        invRes.json(),
-        ordRes.json(),
-        auditRes.json(),
-        schedRes.json(),
-      ]);
+  const { data: products = [] } = useQuery({
+    queryKey: ["inventory"],
+    queryFn: () => api.getInventory(),
+  });
 
-      if (invData.success) setProducts(invData.products);
-      if (ordData.success) setOrders(ordData.orders);
-      if (auditData.success) setAuditLogs(auditData.auditLogs);
-      if (schedData.success) setSchedulerState(schedData.state);
-    } catch (err) {
-      console.error('Failed to fetch dashboard data:', err);
-    }
-  };
+  const { data: orders = [] } = useQuery({
+    queryKey: ["orders"],
+    queryFn: () => api.getOrders(),
+  });
 
-  useEffect(() => {
-    fetchAllData();
-    // Poll every 10 seconds to keep live audit feed updated
-    const interval = setInterval(fetchAllData, 10000);
-    return () => clearInterval(interval);
-  }, []);
+  const { data: auditLogs = [] } = useQuery({
+    queryKey: ["auditLogs"],
+    queryFn: () => api.getAuditLogs(),
+  });
 
-  const handleTriggerSweep = async () => {
-    setIsSweeping(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/scheduler/trigger`, { method: 'POST' });
-      await res.json();
-      await fetchAllData();
-    } catch (err) {
-      console.error('Sweep trigger failed:', err);
-    } finally {
-      setIsSweeping(false);
-    }
-  };
+  const { data: scheduler } = useQuery({
+    queryKey: ["scheduler"],
+    queryFn: () => api.getScheduler(),
+  });
 
-  const handleSimulateSale = async (productId: string) => {
-    await fetch(`${API_BASE}/api/inventory/simulate-sale`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ productId, quantity: 1 }),
-    });
-    await fetchAllData();
-  };
+  const sweepMutation = useMutation({
+    mutationFn: () => api.triggerSweep(),
+    onSuccess: () => {
+      qc.invalidateQueries();
+      toast.success("Proactive audit sweep executed successfully.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
-  const handleDispatchPO = async (productId: string) => {
-    await fetch(`${API_BASE}/api/inventory/po`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ productId }),
-    });
-    await fetchAllData();
-  };
-
-  const handleToggleFlag = async (productId: string, urgency: 'LOW' | 'MEDIUM' | 'CRITICAL') => {
-    await fetch(`${API_BASE}/api/inventory/flag`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ productId, reason: 'Manually toggled from merchant operations console.', urgency }),
-    });
-    await fetchAllData();
-  };
-
-  const handleReconcileOrder = async (orderId: string, deliveryNotes: string) => {
-    await fetch(`${API_BASE}/api/orders/reconcile`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderId, deliveryNotes }),
-    });
-    await fetchAllData();
-  };
-
-  const handleSimulateWebhook = async (trackingNumber: string, carrier: string) => {
-    await fetch(`${API_BASE}/api/courier/webhook`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        trackingNumber,
-        carrier,
-        status: 'DELIVERED_HANDED_TO_RECIPIENT',
-        notes: 'Package successfully delivered and signed by customer at delivery address.',
-      }),
-    });
-    await fetchAllData();
-  };
+  const lowStockCount = products.filter((p) => p.isRestockFlagged || p.currentStock <= p.reorderThreshold).length;
+  const inTransitCount = orders.filter((o) => o.status === "IN_TRANSIT").length;
+  const deliveredCount = orders.filter((o) => o.status === "DELIVERED").length;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      <Header
-        schedulerState={schedulerState}
-        onTriggerSweep={handleTriggerSweep}
-        isSweeping={isSweeping}
-      />
+    <div className="mx-auto min-h-screen max-w-7xl px-4 py-6 font-sans">
+      <Toaster position="top-right" theme="dark" richColors />
 
-      <main className="max-w-7xl w-full mx-auto px-6 py-6 space-y-6 flex-1">
-        {/* Real-time Metric Telemetry Cards */}
-        <MetricsCards products={products} orders={orders} />
-
-        {/* Tab Controls */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setActiveTab('OPERATIONS')}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
-                activeTab === 'OPERATIONS'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                  : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
-              }`}
-            >
-              <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>Operations Dashboard</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('AI_CONSOLE')}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
-                activeTab === 'AI_CONSOLE'
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20'
-                  : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
-              }`}
-            >
-              <MessageSquareCode className="w-3.5 h-3.5" />
-              <span>AI Command Console & Audit Log</span>
-              <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-500/20 text-purple-300 font-mono">
-                Gemini
-              </span>
-            </button>
+      {/* HEADER BAR */}
+      <header className="panel mb-6 flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center">
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-xs font-bold text-primary tracking-widest">[SYS-OPS-2026]</span>
+            <h1 className="font-display text-lg font-bold uppercase tracking-wider text-foreground">
+              Autonomous Ops Specialist
+            </h1>
+            <span className="label-tag flex items-center gap-1.5 border border-line bg-secondary px-2 py-0.5 text-ok">
+              <span className="h-1.5 w-1.5 rounded-full bg-ok animate-blink" />
+              Autopilot Active
+            </span>
           </div>
-
-          <div className="text-xs text-slate-500 hidden sm:block">
-            Auto-refreshing every 10s • Level 1 Submission Ready
-          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Inventory depletion auto-flagging · Carrier proof-of-delivery sync · Proactive cron engine
+          </p>
         </div>
 
-        {/* Active View */}
-        {activeTab === 'OPERATIONS' ? (
-          <div className="space-y-6">
-            <InventoryTable
-              products={products}
-              onSimulateSale={handleSimulateSale}
-              onDispatchPO={handleDispatchPO}
-              onToggleFlag={handleToggleFlag}
-            />
-
-            <OrdersPipeline
-              orders={orders}
-              onReconcileOrder={handleReconcileOrder}
-              onSimulateWebhook={handleSimulateWebhook}
-            />
+        {/* METRICS & TRIGGER */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-4 border border-line bg-secondary/50 px-3 py-2 font-mono text-[11px]">
+            <div>
+              <span className="text-muted-foreground">RESTOCK: </span>
+              <strong className={lowStockCount > 0 ? "text-primary" : "text-foreground"}>{lowStockCount}</strong>
+            </div>
+            <div className="h-3 w-px bg-line" />
+            <div>
+              <span className="text-muted-foreground">IN-TRANSIT: </span>
+              <strong className="text-foreground">{inTransitCount}</strong>
+            </div>
+            <div className="h-3 w-px bg-line" />
+            <div>
+              <span className="text-muted-foreground">RECONCILED: </span>
+              <strong className="text-ok">{deliveredCount}</strong>
+            </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <AgentChatConsole onRefreshData={fetchAllData} />
-            <LiveAuditFeed logs={auditLogs} />
-          </div>
-        )}
-      </main>
 
-      <footer className="border-t border-slate-900 bg-slate-950 py-4 px-6 text-center text-xs text-slate-600">
-        Autonomous E-Commerce Operations & Fulfillment Specialist • Designed for Level 1 Evaluation (kidus@brain3.ai)
+          <button
+            onClick={() => sweepMutation.mutate()}
+            disabled={sweepMutation.isPending}
+            className="btn-signal"
+          >
+            {sweepMutation.isPending ? "Auditing Store…" : "Run Proactive Sweep"}
+          </button>
+        </div>
+      </header>
+
+      {/* VIEW TABS */}
+      <div className="mb-6 flex border-b border-line font-mono text-xs">
+        <button
+          onClick={() => setActiveView("ALL")}
+          className={`border-b-2 px-4 py-2 uppercase tracking-wider transition-colors ${
+            activeView === "ALL" ? "border-primary text-primary font-bold" : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          All Stations
+        </button>
+        <button
+          onClick={() => setActiveView("OPS")}
+          className={`border-b-2 px-4 py-2 uppercase tracking-wider transition-colors ${
+            activeView === "OPS" ? "border-primary text-primary font-bold" : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          01/02 Stock & Manifest
+        </button>
+        <button
+          onClick={() => setActiveView("DISPATCH")}
+          className={`border-b-2 px-4 py-2 uppercase tracking-wider transition-colors ${
+            activeView === "DISPATCH" ? "border-primary text-primary font-bold" : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          03/04 Black Box & Radio
+        </button>
+      </div>
+
+      {/* MAIN SECTIONS */}
+      {activeView === "ALL" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <Inventory products={products} />
+            <Orders orders={orders} />
+          </div>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <AuditFeed logs={auditLogs} />
+            <AgentConsole />
+          </div>
+        </div>
+      )}
+
+      {activeView === "OPS" && (
+        <div className="space-y-6">
+          <Inventory products={products} />
+          <Orders orders={orders} />
+        </div>
+      )}
+
+      {activeView === "DISPATCH" && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <AuditFeed logs={auditLogs} />
+          <AgentConsole />
+        </div>
+      )}
+
+      {/* FOOTER */}
+      <footer className="mt-12 flex flex-col items-center justify-between gap-2 border-t border-line pt-4 font-mono text-[10px] text-muted-foreground md:flex-row">
+        <span>AUTONOMOUS E-COMMERCE OPERATIONS SPECIALIST • LEVEL 1 ASSESSMENT</span>
+        <span>SCHEDULER: {scheduler?.cronExpression || "*/15 * * * *"} • SWEEPS: {scheduler?.totalRuns || 0}</span>
       </footer>
     </div>
   );
-};
+}
 
-export default App;
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Dashboard />
+    </QueryClientProvider>
+  );
+}
