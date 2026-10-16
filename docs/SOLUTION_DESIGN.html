@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Solution Design Specification - Autonomous E-Commerce Operations Specialist</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+      line-height: 1.6;
+      font-size: 11pt;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      font-size: 22pt;
+      color: #0f172a;
+      border-bottom: 2px solid #2563eb;
+      padding-bottom: 8px;
+      margin-top: 0;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      font-size: 13pt;
+      color: #2563eb;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .meta-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 10pt;
+    }
+    .meta-item strong {
+      color: #475569;
+    }
+    h2 {
+      font-size: 14pt;
+      color: #0f172a;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 6px;
+      margin-top: 24px;
+      margin-bottom: 12px;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 11.5pt;
+      color: #1e293b;
+      margin-top: 14px;
+      margin-bottom: 6px;
+      page-break-after: avoid;
+    }
+    p, ul, ol {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+    li {
+      margin-bottom: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 9.5pt;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 8px 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #f1f5f9;
+      color: #0f172a;
+      font-weight: 600;
+    }
+    tr:nth-child(even) td {
+      background-color: #f8fafc;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 8.5pt;
+      font-weight: 600;
+      border-radius: 4px;
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+    .badge-p0 {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .badge-p1 {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    pre {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 8.5pt;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      overflow-x: auto;
+      page-break-inside: avoid;
+    }
+    .callout {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 10px 14px;
+      margin: 12px 0;
+      border-radius: 0 6px 6px 0;
+      font-size: 10pt;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Solution Design Specification (SRS)</h1>
+  <div class="subtitle">Autonomous E-Commerce Operations & Fulfillment Specialist</div>
+
+  <div class="meta-box">
+    <div class="meta-item"><strong>Target Role:</strong> E-Commerce Store & Vendor Ops Specialist</div>
+    <div class="meta-item"><strong>Target Industry:</strong> Multi-Vendor E-Commerce Marketplaces</div>
+    <div class="meta-item"><strong>Reviewer:</strong> Kidus (kidus@brain3.ai)</div>
+    <div class="meta-item"><strong>Evaluation Stage:</strong> Level 1 Project (1-Day Assessment)</div>
+  </div>
+
+  <h2>1. Executive Summary & Problem Breakdown</h2>
+  <p>In modern e-commerce and multi-vendor marketplace platforms, operations teams face critical scaling friction where operational overhead grows linearly with transaction volume. Operations staff spend over 65% of their daily time on repetitive, error-prone manual dashboard updates:</p>
+  
+  <ul>
+    <li><strong>Manual Inventory Restock Flagging:</strong> Store operators must manually comb through inventory tables. When a product runs out or dips below minimum safety thresholds, an operator manually flags the item as "RESTOCK NEEDED" on the merchant dashboard and manually drafts emails to suppliers. Inevitably, manual oversights cause stockouts, unfulfillable orders, and lost revenue.</li>
+    <li><strong>Manual Delivery Status Reconciliation:</strong> When third-party couriers (e.g., local dispatch services, DHL, FedEx) complete deliveries, the e-commerce dashboard remains stuck in "Shipped" or "In Transit" until an operations associate manually cross-references courier dispatch reports and clicks "Mark as Delivered." This manual lag delays merchant escrow disbursements, misaligns return windows, and inflates customer service inquiries.</li>
+  </ul>
+
+  <div class="callout">
+    <strong>Value Proposition:</strong> The Autonomous E-Commerce Operations Specialist operates 24/7 as an intelligent, tool-calling software agent. It eliminates manual data entry, guarantees instant stockout flagging with automated supplier purchase orders, and reconciles courier delivery updates to <code>DELIVERED</code> in real-time.
+  </div>
+
+  <h2>2. Role Breakdown & Prioritization Matrix</h2>
+  <p>The role is decomposed into prioritized operational sub-functionalities:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Workstream / Sub-Functionality</th>
+        <th>Impact</th>
+        <th>Complexity</th>
+        <th>Priority</th>
+        <th>Included in Level 1</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Autonomous Restock Flagging & Inventory Guard</strong></td>
+        <td>High</td>
+        <td>Medium</td>
+        <td><span class="badge badge-p0">P0 (Critical)</span></td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td><strong>Courier Delivery Status Lifecycle Reconciliation</strong></td>
+        <td>High</td>
+        <td>Medium</td>
+        <td><span class="badge badge-p0">P0 (Critical)</span></td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td><strong>Gemini 2.5 Flash Tool-Calling Orchestrator</strong></td>
+        <td>High</td>
+        <td>Medium</td>
+        <td><span class="badge badge-p0">P0 (Critical)</span></td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td><strong>Proactive Background Cron Scheduler</strong></td>
+        <td>High</td>
+        <td>Low</td>
+        <td><span class="badge badge-p1">P1 (Core)</span></td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td><strong>Transactional Supplier Reorder Email Dispatch</strong></td>
+        <td>Medium</td>
+        <td>Low</td>
+        <td><span class="badge badge-p1">P1 (Core)</span></td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td><strong>Interactive Full-Stack Operations Dashboard</strong></td>
+        <td>High</td>
+        <td>Medium</td>
+        <td><span class="badge badge-p1">P1 (Core)</span></td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td><strong>Natural Language Human-in-the-Loop Console</strong></td>
+        <td>Medium</td>
+        <td>Medium</td>
+        <td><span class="badge badge-p1">P1 (Core)</span></td>
+        <td>Yes</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="page-break"></div>
+
+  <h2>3. High-Level System Architecture</h2>
+  <p>The solution is designed as a cohesive <strong>npm workspaces monorepo</strong> pairing a reactive operations UI with a tool-calling Node.js backend.</p>
+
+  <pre>
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          OPERATIONS DASHBOARD (REACT)                       │
+│  ┌───────────────────────┐ ┌───────────────────────┐ ┌───────────────────┐  │
+│  │ Inventory Live Table  │ │ Order Lifecycle Feed  │ │ AI Live Audit Log │  │
+│  │ (Auto-Restock Badges) │ │ (Transit->Delivered)  │ │ (Real-Time Events)│  │
+│  └───────────────────────┘ └───────────────────────┘ └───────────────────┘  │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │       Interactive Ops Console & Proactive Scheduler Status Bar        │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │ REST / Event Stream
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       BACKEND SERVER (EXPRESS + TYPESCRIPT)                 │
+│  ┌─────────────────────────┐                     ┌───────────────────────┐  │
+│  │   REST & Webhook API    │                     │ Proactive Scheduler   │  │
+│  │  - /api/inventory       │                     │ (node-cron engine:    │  │
+│  │  - /api/orders          │                     │  periodic sweeps &    │  │
+│  │  - /api/courier/webhook │                     │  anomaly detection)   │  │
+│  └───────────┬─────────────┘                     └───────────┬───────────┘  │
+│              │                                               │              │
+│              └───────────────────────┬───────────────────────┘              │
+│                                      ▼                                      │
+│                      ┌───────────────────────────────┐                      │
+│                      │   GEMINI 2.5 FLASH AGENT CORE │                      │
+│                      │      (Tool Calling Engine)    │                      │
+│                      └───────────────┬───────────────┘                      │
+│                                      │                                      │
+│       ┌──────────────────────────────┼──────────────────────────────┐       │
+│       ▼                              ▼                              ▼       │
+│ ┌───────────────┐           ┌──────────────────┐           ┌──────────────┐ │
+│ │ Inventory Svc │           │ Courier Tracking │           │ Notification │ │
+│ │ (Flag mutate) │           │ (Reconcile Svc)  │           │ (Email API)  │ │
+│ └───────────────┘           └──────────────────┘           └──────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+  </pre>
+
+  <h3>Key Architectural Components:</h3>
+  <ul>
+    <li><strong>Client (React + Vite + Tailwind CSS):</strong> Renders the real-time operations overview, stockout badges, automated order pipeline transitions, live audit logs, and an interactive AI command console.</li>
+    <li><strong>Backend (Express + TypeScript):</strong> Hosts REST endpoints, courier webhook ingestion, and orchestrates tool calls via Google's Gemini SDK.</li>
+    <li><strong>Agent Core (Gemini 2.5 Flash):</strong> Interprets operational context, reasons over courier proof-of-delivery notes, and autonomously invokes registered system tools.</li>
+    <li><strong>Proactive Scheduler (node-cron):</strong> Executes periodic background audits for delayed shipments and critical inventory depletion without human initiation.</li>
+  </ul>
+
+  <h2>4. Core Agent Tools (Function Calling)</h2>
+  <ol>
+    <li><code>check_inventory_levels()</code>: Scans SKU balances, identifies items below safety stock, and evaluates restock urgency.</li>
+    <li><code>flag_product_for_restock(productId, reason, priority)</code>: Mutates product flags on the dashboard to <code>RESTOCK_NEEDED</code>.</li>
+    <li><code>reconcile_delivery_status(orderId, trackingNumber, carrierStatus, deliveryNotes)</code>: Parses courier delivery proofs and transitions order lifecycle to <code>DELIVERED</code>.</li>
+    <li><code>dispatch_vendor_restock_email(vendorEmail, sku, quantity, poNotes)</code>: Dispatches formal supplier purchase orders via transactional email API.</li>
+    <li><code>generate_daily_ops_summary()</code>: Synthesizes operational events, delayed shipment warnings, and restock alerts into an executive health digest.</li>
+  </ol>
+
+  <h2>5. Third-Party Integrations & Free Tier Limits</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Service</th>
+        <th>Role in Solution</th>
+        <th>Free Tier Limits & Compliance</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Google Gemini 2.5 Flash</strong></td>
+        <td>Autonomous reasoning, intent extraction, courier note analysis, and function calling.</td>
+        <td>Google AI Studio Free Tier (15 RPM / 1,500 RPD). 100% free, no credit card required.</td>
+      </tr>
+      <tr>
+        <td><strong>SendGrid / Resend API</strong></td>
+        <td>Transactional email dispatch for supplier purchase orders and ops digests.</td>
+        <td>Free Tier (100 emails/day). 100% free, no credit card required.</td>
+      </tr>
+      <tr>
+        <td><strong>Carrier Tracking Webhook Engine</strong></td>
+        <td>Simulates and ingests 3PL courier tracking feeds and delivery status payloads.</td>
+        <td>Zero cost, webhook-compatible API simulator adhering to universal logistics standards (17Track / DHL format).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>6. Conclusion & Next Steps</h2>
+  <p>This solution directly targets real-world e-commerce operational friction, fulfills all criteria of the Level 1 evaluation, balances frontend usability with robust backend automation, and operates strictly within zero-cost free-tier boundaries.</p>
+
+</body>
+</html>

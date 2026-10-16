@@ -1,0 +1,106 @@
+import { Router } from 'express';
+import { db } from '../data/db.js';
+import { inventoryService } from '../services/inventory.service.js';
+import { courierService } from '../services/courier.service.js';
+import { schedulerService } from '../services/scheduler.service.js';
+import { processAgentConversation } from '../agent/gemini.js';
+
+export const apiRouter = Router();
+
+// ==========================================
+// INVENTORY ENDPOINTS
+// ==========================================
+apiRouter.get('/inventory', (req, res) => {
+  const products = inventoryService.getAllProducts();
+  res.json({ success: true, products });
+});
+
+apiRouter.post('/inventory/flag', (req, res) => {
+  const { productId, reason, urgency } = req.body;
+  const result = inventoryService.flagProductForRestock(productId, reason, urgency, 'HUMAN_OVERRIDE');
+  res.json(result);
+});
+
+apiRouter.post('/inventory/po', async (req, res) => {
+  const { productId, quantity, customNotes } = req.body;
+  const result = await inventoryService.dispatchVendorRestockPO(productId, quantity, customNotes, 'HUMAN_OVERRIDE');
+  res.json(result);
+});
+
+apiRouter.post('/inventory/simulate-sale', (req, res) => {
+  const { productId, quantity = 1 } = req.body;
+  try {
+    const result = inventoryService.simulateStockSale(productId, Number(quantity));
+    res.json({ success: true, ...result });
+  } catch (err: any) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// ==========================================
+// ORDER & COURIER ENDPOINTS
+// ==========================================
+apiRouter.get('/orders', (req, res) => {
+  const orders = courierService.getAllOrders();
+  res.json({ success: true, orders });
+});
+
+apiRouter.post('/orders/reconcile', async (req, res) => {
+  const { orderId, deliveryNotes } = req.body;
+  const result = await courierService.reconcileDeliveryStatus(
+    orderId,
+    { deliveryNotes },
+    'HUMAN_OVERRIDE'
+  );
+  res.json(result);
+});
+
+apiRouter.post('/courier/webhook', async (req, res) => {
+  const { trackingNumber, carrier, status, notes } = req.body;
+  if (!trackingNumber) {
+    return res.status(400).json({ success: false, message: 'Missing trackingNumber' });
+  }
+  const result = await courierService.processCarrierWebhookEvent({
+    trackingNumber,
+    carrier: carrier || 'Third-Party Courier',
+    status: status || 'DELIVERED',
+    notes: notes || 'Delivery completed at recipient destination.',
+  });
+  res.json({ success: true, ...result });
+});
+
+// ==========================================
+// AUDIT LOGS ENDPOINTS
+// ==========================================
+apiRouter.get('/audit-logs', (req, res) => {
+  res.json({ success: true, auditLogs: db.auditLogs });
+});
+
+// ==========================================
+// PROACTIVE SCHEDULER ENDPOINTS
+// ==========================================
+apiRouter.get('/scheduler', (req, res) => {
+  res.json({ success: true, state: schedulerService.getState() });
+});
+
+apiRouter.post('/scheduler/trigger', async (req, res) => {
+  const result = await schedulerService.runAuditSweep('HUMAN_OVERRIDE');
+  res.json({ success: true, result });
+});
+
+// ==========================================
+// AGENT CONVERSATION ENDPOINT
+// ==========================================
+apiRouter.post('/agent/chat', async (req, res) => {
+  const { prompt, history } = req.body;
+  if (!prompt) {
+    return res.status(400).json({ success: false, message: 'Prompt is required' });
+  }
+
+  try {
+    const agentResponse = await processAgentConversation(prompt, history || []);
+    res.json({ success: true, ...agentResponse });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
