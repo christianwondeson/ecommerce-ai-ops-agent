@@ -16,6 +16,25 @@ app.use(express.json());
 // API Routes
 app.use('/api', apiRouter);
 
+// Root Welcome & API Index
+app.get('/', (req, res) => {
+  res.json({
+    service: 'Autonomous E-Commerce Operations Specialist API',
+    status: 'online',
+    version: '1.0.0',
+    documentation: 'https://github.com/christianwondeson/ecommerce-ai-ops-agent',
+    endpoints: {
+      health: '/health',
+      inventory: '/api/inventory',
+      orders: '/api/orders',
+      auditLogs: '/api/audit-logs',
+      scheduler: '/api/scheduler',
+      chat: '/api/agent/chat',
+      webhook: '/api/courier/webhook',
+    },
+  });
+});
+
 // Health Check
 app.get('/health', (req, res) => {
   res.json({
