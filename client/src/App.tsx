@@ -10,6 +10,7 @@ import { AgentConsole } from "./components/AgentConsole";
 import { EscrowLedger } from "./components/EscrowLedger";
 import { CheckoutReconciliation } from "./components/CheckoutReconciliation";
 import { CustomerCheckoutDrawer } from "./components/CustomerCheckoutDrawer";
+import { ThemeToggle, useTheme } from "./components/ThemeToggle";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,6 +24,7 @@ function Dashboard() {
   const qc = useQueryClient();
   const [activeView, setActiveView] = useState<"ALL" | "OPS" | "DISPATCH" | "ESCROW" | "CHECKOUT">("ALL");
   const [isCheckoutDrawerOpen, setIsCheckoutDrawerOpen] = useState(false);
+  const { theme, toggle: toggleTheme } = useTheme();
 
   const { data: products = [] } = useQuery({
     queryKey: ["inventory"],
@@ -87,12 +89,13 @@ function Dashboard() {
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            DIR stockout predictive forecasting · Courier exception rerouting · Checkout callback healer · 12% marketplace escrow
+            DIR stockout predictive forecasting · Courier exception rerouting · Checkout callback healer · 12% marketplace escrow · <span className="text-ok font-semibold">ETB Birr</span>
           </p>
         </div>
 
         {/* METRICS & TRIGGER */}
         <div className="flex flex-wrap items-center gap-3">
+          <ThemeToggle theme={theme} toggle={toggleTheme} />
           <div className="flex items-center gap-4 border border-line bg-secondary/50 px-3 py-2 font-mono text-[11px]">
             <div>
               <span className="text-muted-foreground">RESTOCK: </span>

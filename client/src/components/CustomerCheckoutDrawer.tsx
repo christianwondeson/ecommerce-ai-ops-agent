@@ -4,6 +4,85 @@ import { toast } from "sonner";
 import { api, type Product, type CheckoutSession } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
+// ─── ETB Currency Formatter ──────────────────────────────────────────────────
+const ETB_RATE = 127.5; // 1 USD ≈ 127.5 ETB (illustrative rate)
+function etb(usd: number): string {
+  return ` ETB ${(usd * ETB_RATE).toLocaleString("en-ET", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+// ─── Step Progress Indicator ─────────────────────────────────────────────────
+function StepProgress({ step }: { step: "FORM" | "USSD_SIM" | "CONFIRMED" }) {
+  const steps = [
+    { key: "FORM", label: "Cart" },
+    { key: "USSD_SIM", label: "Payment" },
+    { key: "CONFIRMED", label: "Confirmed" },
+  ];
+  const currentIdx = steps.findIndex((s) => s.key === step);
+  return (
+    <div className="flex items-center justify-center gap-0">
+      {steps.map((s, i) => (
+        <div key={s.key} className="flex items-center">
+          <div className="flex flex-col items-center gap-1">
+            <div
+              className={cn(
+                "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all",
+                i < currentIdx
+                  ? "bg-ok text-card"
+                  : i === currentIdx
+                  ? "bg-primary text-primary-foreground animate-pulse-ring"
+                  : "bg-secondary text-muted-foreground border border-line"
+              )}
+            >
+              {i < currentIdx ? "✓" : i + 1}
+            </div>
+            <span
+              className={cn(
+                "font-mono text-[9px] uppercase tracking-wider whitespace-nowrap",
+                i === currentIdx ? "text-primary font-bold" : "text-muted-foreground"
+              )}
+            >
+              {s.label}
+            </span>
+          </div>
+          {i < steps.length - 1 && (
+            <div
+              className={cn(
+                "mx-2 mb-4 h-0.5 w-10 transition-all",
+                i < currentIdx ? "bg-ok" : "bg-line"
+              )}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Stock Indicator Badge ───────────────────────────────────────────────────
+function StockBadge({ stock, threshold }: { stock: number; threshold: number }) {
+  if (stock === 0)
+    return (
+      <span className="rounded-full bg-destructive px-2 py-0.5 font-mono text-[9px] font-bold text-destructive-foreground animate-blink">
+        OUT OF STOCK
+      </span>
+    );
+  if (stock <= threshold)
+    return (
+      <span className="rounded-full bg-caution px-2 py-0.5 font-mono text-[9px] font-bold text-background">
+        LOW · {stock} left
+      </span>
+    );
+  return (
+    <span className="rounded-full border border-ok/40 bg-ok/10 px-2 py-0.5 font-mono text-[9px] font-bold text-ok">
+      {stock} in stock
+    </span>
+  );
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
 interface CustomerCheckoutDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -18,16 +97,13 @@ export function CustomerCheckoutDrawer({
   const qc = useQueryClient();
   const refresh = () => qc.invalidateQueries();
 
-  const [selectedProductId, setSelectedProductId] = useState<string>(
-    products[0]?.id || ""
-  );
+  const [selectedProductId, setSelectedProductId] = useState<string>(products[0]?.id || "");
   const [quantity, setQuantity] = useState<number>(1);
-  const [customerName, setCustomerName] = useState<string>("Abebech Tadesse");
-  const [customerPhone, setCustomerPhone] = useState<string>("+251 911 458920");
-  const [shippingAddress, setShippingAddress] = useState<string>("Bole Medhanialem, Addis Ababa");
+  const [customerName, setCustomerName] = useState("Abebech Tadesse");
+  const [customerPhone, setCustomerPhone] = useState("+251 911 458920");
+  const [shippingAddress, setShippingAddress] = useState("Bole Medhanialem, Addis Ababa");
   const [paymentProvider, setPaymentProvider] = useState<"ARIFPAY_TELEBIRR" | "ARIFPAY_CBE" | "CARD">("ARIFPAY_TELEBIRR");
 
-  // Flow State
   const [activeSession, setActiveSession] = useState<CheckoutSession | null>(null);
   const [flowStep, setFlowStep] = useState<"FORM" | "USSD_SIM" | "CONFIRMED">("FORM");
   const [simMode, setSimMode] = useState<"CLEAN" | "RACE" | "ABANDON" | null>(null);
@@ -35,20 +111,19 @@ export function CustomerCheckoutDrawer({
   const selectedProduct = products.find((p) => p.id === selectedProductId) || products[0];
   const isOutOfStock = selectedProduct ? selectedProduct.currentStock < quantity : false;
 
-  // Emergency PO Mutation
+  const itemTotalUSD = selectedProduct ? selectedProduct.unitPrice * quantity : 0;
+  const deliveryFeeUSD = 3.5;
+  const orderTotalUSD = itemTotalUSD + deliveryFeeUSD;
+
   const emergencyPoMutation = useMutation({
-    mutationFn: () =>
-      api.po(selectedProduct.id, selectedProduct.suggestedReorderQuantity),
-    onSuccess: (data: any) => {
+    mutationFn: () => api.po(selectedProduct.id, selectedProduct.suggestedReorderQuantity),
+    onSuccess: () => {
       refresh();
-      toast.success(
-        `Emergency PO dispatched to ${selectedProduct.vendorName}! Factory batch is now in-transit.`
-      );
+      toast.success(`Emergency PO dispatched to ${selectedProduct.vendorName}! Factory batch in-transit.`);
     },
     onError: (e: Error) => toast.error(`PO dispatch failed: ${e.message}`),
   });
 
-  // Create Checkout Session Mutation
   const checkoutMutation = useMutation({
     mutationFn: (mode: "CLEAN" | "RACE" | "ABANDON") =>
       api.createCheckout({
@@ -59,51 +134,47 @@ export function CustomerCheckoutDrawer({
     onSuccess: async (data: any, mode) => {
       if (!data.success) {
         refresh();
-        toast.error(data.message || "Checkout failed: Stock unavailable.");
+        toast.error(data.message || "Checkout failed.");
         return;
       }
-
       const session: CheckoutSession = data.session;
       setActiveSession(session);
       setSimMode(mode);
+      setFlowStep("USSD_SIM");
       refresh();
 
       if (mode === "CLEAN") {
-        // Instant clean callback
-        toast.info("Payment confirmed via Arifpay gateway. Reconciling order...");
-        try {
-          await api.handleCheckoutCallback(session.sessionId, "success");
-          refresh();
-          setFlowStep("CONFIRMED");
-          toast.success("Order confirmed & escrow locked!");
-        } catch (err: any) {
-          toast.error(err.message);
-        }
-      } else if (mode === "RACE") {
-        // Show USSD lag screen, then heal
-        setFlowStep("USSD_SIM");
-        toast.warning("Simulating USSD race condition: buyer redirected while webhook in-transit.");
         setTimeout(async () => {
           try {
             await api.handleCheckoutCallback(session.sessionId, "success");
             refresh();
             setFlowStep("CONFIRMED");
-            toast.success("Autonomous Healer detected clearance & confirmed payment!");
+            toast.success("Payment confirmed and escrow locked!");
+          } catch (err: any) {
+            toast.error(err.message);
+          }
+        }, 800);
+      } else if (mode === "RACE") {
+        toast.warning("USSD race condition: buyer redirected while webhook in-transit…");
+        setTimeout(async () => {
+          try {
+            await api.handleCheckoutCallback(session.sessionId, "success");
+            refresh();
+            setFlowStep("CONFIRMED");
+            toast.success("Autonomous Healer caught the clearance lag!");
           } catch (err: any) {
             toast.error(err.message);
           }
         }, 3200);
       } else if (mode === "ABANDON") {
-        // Customer abandons window
-        setFlowStep("USSD_SIM");
-        toast.error("Customer closed checkout window. Item is reserved on hold...");
+        toast.error("Customer closed checkout window. Item reserved on hold…");
         setTimeout(async () => {
           try {
             await api.simulateOrphanTimeout();
             refresh();
-            toast.info("Orphan Hold Reaper swept abandoned hold & restored item stock.");
-            onClose();
+            toast.info("Orphan Reaper swept the abandoned hold and restored stock.");
             resetFlow();
+            onClose();
           } catch (err: any) {
             toast.error(err.message);
           }
@@ -121,117 +192,135 @@ export function CustomerCheckoutDrawer({
 
   if (!isOpen) return null;
 
-  const itemTotal = selectedProduct ? selectedProduct.unitPrice * quantity : 0;
-  const deliveryFee = 3.5;
-  const orderTotal = itemTotal + deliveryFee;
+  const PAYMENT_OPTIONS = [
+    {
+      id: "ARIFPAY_TELEBIRR" as const,
+      icon: "📱",
+      label: "Telebirr",
+      sub: "USSD push",
+      color: "oklch(0.7 0.19 45)",
+    },
+    {
+      id: "ARIFPAY_CBE" as const,
+      icon: "🏦",
+      label: "CBE Birr",
+      sub: "Mobile banking",
+      color: "oklch(0.6 0.17 200)",
+    },
+    {
+      id: "CARD" as const,
+      icon: "💳",
+      label: "Debit Card",
+      sub: "Visa / Mastercard",
+      color: "oklch(0.8 0.15 310)",
+    },
+  ];
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-sm animate-fadein">
-      <div className="flex h-full w-full max-w-xl flex-col border-l border-line bg-card shadow-2xl overflow-y-auto">
-        {/* HEADER */}
-        <header className="flex items-center justify-between border-b border-line px-6 py-4 bg-secondary/40">
+    <div className="fixed inset-0 z-50 flex justify-end animate-fadein">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={() => { resetFlow(); onClose(); }}
+      />
+
+      {/* Drawer Panel */}
+      <div className="checkout-drawer relative flex h-full w-full max-w-[480px] flex-col overflow-hidden animate-slideup">
+
+        {/* ── HEADER ── */}
+        <header className="checkout-header flex items-center justify-between px-5 py-4 border-b border-line">
           <div className="flex items-center gap-3">
-            <span className="rounded bg-primary/20 px-2 py-0.5 font-mono text-xs font-bold text-primary">
-              STOREFRONT SIMULATOR
-            </span>
-            <h2 className="font-display text-base font-bold uppercase tracking-wider text-foreground">
-              Customer Express Checkout
-            </h2>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/20 text-lg">
+              🛒
+            </div>
+            <div>
+              <h2 className="font-display text-sm font-bold uppercase tracking-wider text-foreground">
+                Arifshops Checkout
+              </h2>
+              <p className="text-[11px] text-muted-foreground font-mono">
+                Powered by Arifpay · Addis Ababa
+              </p>
+            </div>
           </div>
           <button
-            onClick={() => {
-              resetFlow();
-              onClose();
-            }}
-            className="rounded p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            onClick={() => { resetFlow(); onClose(); }}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-muted-foreground hover:bg-line/60 hover:text-foreground transition-all text-sm"
           >
             ✕
           </button>
         </header>
 
-        {/* CONTENT BODY */}
-        <div className="flex-1 p-6 space-y-6">
+        {/* ── STEP PROGRESS ── */}
+        <div className="border-b border-line px-5 py-3 bg-secondary/20">
+          <StepProgress step={flowStep} />
+        </div>
+
+        {/* ── SCROLLABLE BODY ── */}
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+
+          {/* ══════════ FORM STEP ══════════ */}
           {flowStep === "FORM" && (
             <>
-              {/* PRODUCT SELECTOR */}
-              <div className="space-y-3">
-                <label className="font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  1. Select Item from Catalog
-                </label>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {products.map((p) => {
-                    const isSelected = p.id === selectedProductId;
-                    const isDepleted = p.currentStock === 0;
 
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedProductId(p.id);
-                          setQuantity(1);
-                        }}
-                        className={cn(
-                          "flex flex-col text-left p-3 rounded border transition-all",
-                          isSelected
-                            ? "border-primary bg-primary/10 ring-1 ring-primary"
-                            : "border-line bg-secondary/30 hover:border-line/80",
-                          isDepleted && "opacity-85 border-destructive/40 bg-destructive/5"
-                        )}
-                      >
-                        <div className="flex items-start justify-between gap-1">
-                          <span className="font-mono text-[10px] text-muted-foreground">{p.sku}</span>
-                          <span
-                            className={cn(
-                              "font-mono text-[9px] px-1.5 py-0.2 rounded font-bold",
-                              isDepleted
-                                ? "bg-destructive text-destructive-foreground animate-blink"
-                                : p.currentStock <= p.reorderThreshold
-                                ? "bg-caution text-background"
-                                : "bg-ok/20 text-ok"
-                            )}
-                          >
-                            {isDepleted ? "OUT OF STOCK" : `${p.currentStock} in stock`}
-                          </span>
-                        </div>
-                        <h4 className="mt-1 text-xs font-medium line-clamp-1">{p.name}</h4>
-                        <div className="mt-2 flex items-baseline justify-between font-mono">
-                          <span className="text-xs font-bold text-foreground">${p.unitPrice.toFixed(2)}</span>
-                          <span className="text-[10px] text-muted-foreground">{p.vendorName}</span>
-                        </div>
-                      </button>
-                    );
-                  })}
+              {/* 1. PRODUCT SELECTOR */}
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground font-mono text-[10px] font-bold">1</span>
+                  <span className="font-semibold text-sm text-foreground">Select Item</span>
+                </div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {products.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => { setSelectedProductId(p.id); setQuantity(1); }}
+                      className={cn(
+                        "product-card-checkout",
+                        p.id === selectedProductId && "selected",
+                        p.currentStock === 0 && "depleted"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-1">
+                        <span className="font-mono text-[9px] text-muted-foreground truncate">{p.sku}</span>
+                        <StockBadge stock={p.currentStock} threshold={p.reorderThreshold} />
+                      </div>
+                      <h4 className="text-xs font-semibold line-clamp-2 text-foreground">{p.name}</h4>
+                      <div className="flex items-baseline justify-between mt-1">
+                        <span className="font-mono text-xs font-bold text-primary">
+                          {etb(p.unitPrice)}
+                        </span>
+                        <span className="text-[9px] text-muted-foreground truncate max-w-[80px]">{p.vendorName}</span>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* QUANTITY PICKER */}
+              {/* 2. QUANTITY */}
               {selectedProduct && (
-                <div className="flex items-center justify-between border-y border-line py-3">
+                <div className="flex items-center justify-between rounded-xl border border-line bg-secondary/30 px-4 py-3">
                   <div>
-                    <span className="font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Quantity:
-                    </span>
-                    <span className="ml-2 font-mono text-xs text-foreground">
-                      (Available: {selectedProduct.currentStock})
-                    </span>
+                    <span className="text-sm font-semibold text-foreground">Quantity</span>
+                    <p className="font-mono text-[11px] text-muted-foreground mt-0.5">
+                      {selectedProduct.currentStock} units available
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                       disabled={quantity <= 1}
-                      className="h-7 w-7 rounded border border-line bg-secondary font-mono text-xs font-bold hover:bg-line/40 disabled:opacity-40"
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-card font-bold text-foreground hover:border-primary hover:text-primary transition-all disabled:opacity-40"
                     >
                       −
                     </button>
-                    <span className="w-8 text-center font-mono text-sm font-bold text-foreground">
+                    <span className="w-8 text-center font-mono text-base font-bold text-foreground">
                       {quantity}
                     </span>
                     <button
                       type="button"
                       onClick={() => setQuantity((q) => q + 1)}
-                      className="h-7 w-7 rounded border border-line bg-secondary font-mono text-xs font-bold hover:bg-line/40"
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-card font-bold text-foreground hover:border-primary hover:text-primary transition-all"
                     >
                       +
                     </button>
@@ -239,276 +328,359 @@ export function CustomerCheckoutDrawer({
                 </div>
               )}
 
-              {/* OUT OF STOCK GUARD ALERT */}
+              {/* ⚠️ OUT-OF-STOCK GUARD */}
               {isOutOfStock && selectedProduct && (
-                <div className="rounded border border-destructive/60 bg-destructive/15 p-4 space-y-3 animate-slidein">
-                  <div className="flex items-start gap-2.5">
-                    <span className="text-xl">⚠️</span>
+                <div className="rounded-xl border-2 border-destructive/50 bg-destructive/10 p-4 space-y-3 animate-slidein">
+                  <div className="flex gap-3">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-destructive/15 text-xl">
+                      🚫
+                    </div>
                     <div>
-                      <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-destructive">
-                        Autonomous Out-of-Stock Guard Active
-                      </h4>
-                      <p className="mt-1 text-xs text-foreground/90 leading-relaxed">
-                        SKU <strong>{selectedProduct.sku}</strong> only has {selectedProduct.currentStock} unit(s) remaining (requested: {quantity}).
-                        Checkout is <strong>blocked</strong> to prevent inventory starvation & customer dispute.
+                      <h4 className="font-bold text-sm text-destructive">Out-of-Stock Guard Active</h4>
+                      <p className="text-xs text-foreground/80 mt-1 leading-relaxed">
+                        Only <strong>{selectedProduct.currentStock}</strong> unit(s) of{" "}
+                        <strong>{selectedProduct.sku}</strong> remain. Checkout is blocked to prevent
+                        inventory starvation and customer disputes.
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center justify-end">
-                    <button
-                      type="button"
-                      onClick={() => emergencyPoMutation.mutate()}
-                      disabled={emergencyPoMutation.isPending || !!selectedProduct.lastPoDispatchedAt}
-                      className="btn-signal text-xs bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-none"
-                    >
-                      {emergencyPoMutation.isPending
-                        ? "Dispatching PO…"
-                        : selectedProduct.lastPoDispatchedAt
-                        ? "🚚 Restock PO Already In-Transit"
-                        : "⚡ Dispatch Emergency Supplier Restock PO"}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => emergencyPoMutation.mutate()}
+                    disabled={emergencyPoMutation.isPending || !!selectedProduct.lastPoDispatchedAt}
+                    className="w-full rounded-xl bg-destructive py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-destructive-foreground hover:bg-destructive/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {emergencyPoMutation.isPending
+                      ? "⏳ Dispatching Emergency PO…"
+                      : selectedProduct.lastPoDispatchedAt
+                      ? "🚚 Restock PO Already In-Transit"
+                      : "⚡ Dispatch Emergency Supplier Restock PO"}
+                  </button>
                 </div>
               )}
 
-              {/* BUYER INFORMATION FORM */}
+              {/* 3. BUYER INFORMATION */}
               <div className="space-y-3">
-                <label className="font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  2. Buyer Shipping Information
-                </label>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground font-mono text-[10px] font-bold">2</span>
+                  <span className="font-semibold text-sm text-foreground">Delivery Information</span>
+                </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
-                    <span className="block font-mono text-[10px] text-muted-foreground mb-1">Customer Full Name</span>
+                  <div className="space-y-1.5">
+                    <label className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Full Name
+                    </label>
                     <input
                       type="text"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      className="w-full rounded border border-line bg-secondary/50 px-3 py-2 font-mono text-xs outline-none focus:border-primary"
+                      className="checkout-input w-full rounded-xl px-3 py-2.5 text-sm"
+                      placeholder="e.g. Abebech Tadesse"
                     />
                   </div>
-                  <div>
-                    <span className="block font-mono text-[10px] text-muted-foreground mb-1">Phone (USSD Prompt Target)</span>
-                    <input
-                      type="text"
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
-                      className="w-full rounded border border-line bg-secondary/50 px-3 py-2 font-mono text-xs outline-none focus:border-primary"
-                    />
+                  <div className="space-y-1.5">
+                    <label className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Phone · USSD Target
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-xs text-muted-foreground">🇪🇹</span>
+                      <input
+                        type="text"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        className="checkout-input w-full rounded-xl pl-9 pr-3 py-2.5 text-sm"
+                        placeholder="+251 9xx xxx xxx"
+                      />
+                    </div>
                   </div>
-                  <div className="sm:col-span-2">
-                    <span className="block font-mono text-[10px] text-muted-foreground mb-1">Delivery Destination</span>
-                    <input
-                      type="text"
-                      value={shippingAddress}
-                      onChange={(e) => setShippingAddress(e.target.value)}
-                      className="w-full rounded border border-line bg-secondary/50 px-3 py-2 font-mono text-xs outline-none focus:border-primary"
-                    />
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Delivery Address · Addis Ababa
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">📍</span>
+                      <input
+                        type="text"
+                        value={shippingAddress}
+                        onChange={(e) => setShippingAddress(e.target.value)}
+                        className="checkout-input w-full rounded-xl pl-9 pr-3 py-2.5 text-sm"
+                        placeholder="Kebele, Sub-city, Addis Ababa"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* PAYMENT PROVIDER SELECTION */}
+              {/* 4. PAYMENT METHOD */}
               <div className="space-y-3">
-                <label className="font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  3. Payment Gateway Method
-                </label>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground font-mono text-[10px] font-bold">3</span>
+                  <span className="font-semibold text-sm text-foreground">Payment Method</span>
+                </div>
                 <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentProvider("ARIFPAY_TELEBIRR")}
-                    className={cn(
-                      "flex flex-col items-center justify-center p-3 rounded border text-center transition-all",
-                      paymentProvider === "ARIFPAY_TELEBIRR"
-                        ? "border-primary bg-primary/10 text-primary font-bold"
-                        : "border-line bg-secondary/30 text-muted-foreground hover:border-line/80"
-                    )}
-                  >
-                    <span className="text-base mb-1">📱</span>
-                    <span className="font-mono text-[11px]">Telebirr USSD</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentProvider("ARIFPAY_CBE")}
-                    className={cn(
-                      "flex flex-col items-center justify-center p-3 rounded border text-center transition-all",
-                      paymentProvider === "ARIFPAY_CBE"
-                        ? "border-primary bg-primary/10 text-primary font-bold"
-                        : "border-line bg-secondary/30 text-muted-foreground hover:border-line/80"
-                    )}
-                  >
-                    <span className="text-base mb-1">🏦</span>
-                    <span className="font-mono text-[11px]">CBE Birr</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentProvider("CARD")}
-                    className={cn(
-                      "flex flex-col items-center justify-center p-3 rounded border text-center transition-all",
-                      paymentProvider === "CARD"
-                        ? "border-primary bg-primary/10 text-primary font-bold"
-                        : "border-line bg-secondary/30 text-muted-foreground hover:border-line/80"
-                    )}
-                  >
-                    <span className="text-base mb-1">💳</span>
-                    <span className="font-mono text-[11px]">Debit Card</span>
-                  </button>
+                  {PAYMENT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setPaymentProvider(opt.id)}
+                      className={cn("payment-pill", paymentProvider === opt.id && "selected")}
+                    >
+                      <span className="text-xl">{opt.icon}</span>
+                      <span className="font-semibold text-xs">{opt.label}</span>
+                      <span className="text-[10px] text-muted-foreground font-normal">{opt.sub}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* ORDER SUMMARY */}
-              <div className="rounded border border-line bg-secondary/20 p-4 font-mono text-xs space-y-1.5">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Subtotal ({quantity}x {selectedProduct?.sku}):</span>
-                  <span>${itemTotal.toFixed(2)}</span>
+              {/* 5. ORDER SUMMARY */}
+              <div className="rounded-xl border border-line bg-secondary/20 overflow-hidden">
+                <div className="bg-secondary/40 px-4 py-2.5 border-b border-line">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Order Summary
+                  </span>
                 </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Courier Delivery (Addis Express):</span>
-                  <span>${deliveryFee.toFixed(2)}</span>
-                </div>
-                <div className="h-px bg-line my-1" />
-                <div className="flex justify-between text-foreground font-bold text-sm">
-                  <span>Total Due:</span>
-                  <span className="text-primary">${orderTotal.toFixed(2)}</span>
+                <div className="px-4 py-3 space-y-2 font-mono text-xs">
+                  {selectedProduct && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>{quantity}x {selectedProduct.sku}</span>
+                      <span>{etb(itemTotalUSD)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Addis Express Delivery</span>
+                    <span>{etb(deliveryFeeUSD)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground text-[10px]">
+                    <span>Arifpay Marketplace Fee (12%)</span>
+                    <span className="text-ok">Protected by Escrow</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-line text-base font-bold text-foreground">
+                    <span>Total Due</span>
+                    <span className="text-primary">{etb(orderTotalUSD)}</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground pt-1">
+                    ≈ USD ${orderTotalUSD.toFixed(2)} · Rate: 1 USD = 127.50 ETB
+                  </p>
                 </div>
               </div>
 
-              {/* 3 SIMULATION BUTTONS */}
-              <div className="space-y-2 pt-2">
-                <span className="block font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Simulate Real E-Commerce Scenarios:
-                </span>
+              {/* 6. SIMULATE SCENARIOS */}
+              <div className="space-y-2.5 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-secondary border border-line font-mono text-[10px]">⚡</span>
+                  <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                    Simulate Real-World E-Commerce Scenarios
+                  </span>
+                </div>
 
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                   <button
                     type="button"
                     onClick={() => checkoutMutation.mutate("CLEAN")}
                     disabled={isOutOfStock || checkoutMutation.isPending}
-                    className="btn-op py-2.5 border-ok/50 text-ok hover:bg-ok/10 disabled:opacity-40"
-                    title="Simulate seamless checkout callback & immediate order confirmation"
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-ok/40 bg-ok/5 py-3 px-2 transition-all text-center",
+                      "hover:border-ok hover:bg-ok/10 hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+                    )}
+                    title="Instant payment confirmation — webhook and callback in sync"
                   >
-                    🟢 Clean Checkout
+                    <span className="text-lg">🟢</span>
+                    <span className="font-mono text-[11px] font-bold text-ok uppercase tracking-wide">Clean</span>
+                    <span className="text-[10px] text-muted-foreground leading-tight">Instant confirm</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => checkoutMutation.mutate("RACE")}
                     disabled={isOutOfStock || checkoutMutation.isPending}
-                    className="btn-op py-2.5 border-primary/50 text-primary hover:bg-primary/10 disabled:opacity-40"
-                    title="Simulate USSD pending redirect with autonomous background payment healer"
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-primary/40 bg-primary/5 py-3 px-2 transition-all text-center",
+                      "hover:border-primary hover:bg-primary/10 hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+                    )}
+                    title="Buyer returns to page before Arifpay webhook arrives — AI healer resolves"
                   >
-                    🟡 USSD Race Lag
+                    <span className="text-lg">🟡</span>
+                    <span className="font-mono text-[11px] font-bold text-primary uppercase tracking-wide">Race Lag</span>
+                    <span className="text-[10px] text-muted-foreground leading-tight">USSD webhook lag</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => checkoutMutation.mutate("ABANDON")}
                     disabled={isOutOfStock || checkoutMutation.isPending}
-                    className="btn-op py-2.5 border-caution/50 text-caution hover:bg-caution/10 disabled:opacity-40"
-                    title="Simulate customer closing browser; Orphan Reaper restores stock"
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-caution/40 bg-caution/5 py-3 px-2 transition-all text-center",
+                      "hover:border-caution hover:bg-caution/10 hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+                    )}
+                    title="Customer closes browser — Orphan Reaper returns reserved stock"
                   >
-                    🔴 Abandon Checkout
+                    <span className="text-lg">🔴</span>
+                    <span className="font-mono text-[11px] font-bold text-caution uppercase tracking-wide">Abandon</span>
+                    <span className="text-[10px] text-muted-foreground leading-tight">Orphan reaper</span>
                   </button>
                 </div>
               </div>
             </>
           )}
 
-          {/* USSD PUSH SIMULATION SCREEN */}
+          {/* ══════════ USSD SIMULATION STEP ══════════ */}
           {flowStep === "USSD_SIM" && activeSession && (
-            <div className="rounded border border-line bg-secondary/30 p-6 text-center space-y-4 animate-slidein">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/20 text-2xl animate-pulse">
-                📱
-              </div>
-              <h3 className="font-display text-base font-bold uppercase tracking-wider text-foreground">
-                Arifpay USSD Push In-Flight
-              </h3>
-              <p className="font-mono text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                Prompt dispatched to <strong className="text-foreground">{customerPhone}</strong>. Waiting for PIN entry via {paymentProvider}...
-              </p>
-
-              <div className="rounded border border-primary/40 bg-primary/10 p-3 font-mono text-xs space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Session ID:</span>
-                  <span className="text-foreground font-bold">{activeSession.sessionId}</span>
+            <div className="flex flex-col items-center gap-5 text-center py-6 animate-slideup">
+              {/* Phone mockup */}
+              <div className="relative">
+                <div className="mx-auto w-32 rounded-2xl border-4 border-foreground/20 bg-secondary/40 p-3 shadow-2xl">
+                  <div className="rounded-lg bg-primary/20 py-4 text-3xl animate-pulse">📱</div>
+                  <div className="mt-2 space-y-1">
+                    <div className="rounded bg-secondary py-1 font-mono text-[9px] text-muted-foreground">Arifpay USSD</div>
+                    <div className="rounded bg-primary/30 py-1 font-mono text-[9px] font-bold text-primary animate-blink">
+                      *127*2*{String(Math.floor(Math.random() * 9999 + 1000)).padStart(4, "0")}#
+                    </div>
+                    <div className="rounded border border-line py-1.5 font-mono text-[8px] text-muted-foreground">
+                      Enter PIN ••••
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Gateway State:</span>
-                  <span className="text-primary font-bold animate-pulse">CALLBACK_PENDING</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Autonomous Action:</span>
-                  <span className="text-ok">Payment Healer polling gateway...</span>
+                <div className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-ok text-[10px] animate-pulse">
+                  ✓
                 </div>
               </div>
 
-              <p className="font-mono text-[11px] text-muted-foreground">
-                {simMode === "ABANDON"
-                  ? "Simulating customer timeout... Orphan Reaper will restore locked inventory."
-                  : "Resolving clearance lag between browser redirect and payment gateway..."}
-              </p>
+              <div>
+                <h3 className="font-display text-base font-bold text-foreground">
+                  {simMode === "ABANDON" ? "Checkout Abandoned" : "Arifpay USSD Push Sent"}
+                </h3>
+                <p className="mt-1 font-mono text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">
+                  {simMode === "ABANDON"
+                    ? "Customer closed their browser. Orphan Hold Reaper is sweeping the reserved inventory…"
+                    : `USSD prompt dispatched to ${customerPhone}. Waiting for PIN authorization…`}
+                </p>
+              </div>
+
+              {/* Live status panel */}
+              <div className="w-full rounded-xl border border-primary/30 bg-primary/5 p-4 text-left space-y-2.5">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary animate-blink" />
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-primary">
+                    Live Gateway Status
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-y-2 font-mono text-[10px]">
+                  <span className="text-muted-foreground">Session ID</span>
+                  <span className="text-right text-foreground font-bold truncate">{activeSession.sessionId}</span>
+                  <span className="text-muted-foreground">Gateway State</span>
+                  <span className="text-right font-bold text-primary animate-pulse">CALLBACK_PENDING</span>
+                  <span className="text-muted-foreground">Amount</span>
+                  <span className="text-right font-bold text-foreground">{etb(orderTotalUSD)}</span>
+                  <span className="text-muted-foreground">Autonomous Agent</span>
+                  <span className="text-right text-ok">
+                    {simMode === "ABANDON" ? "Orphan Reaper active" : "Payment Healer polling…"}
+                  </span>
+                </div>
+              </div>
+
+              {simMode === "RACE" && (
+                <div className="w-full rounded-xl border border-caution/30 bg-caution/5 px-4 py-3 text-left">
+                  <p className="font-mono text-[11px] text-caution font-semibold">
+                    ⚠ Race Condition Detected
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                    Browser returned from payment redirect before the Arifpay webhook arrived.
+                    Autonomous Payment Healer is polling the gateway and will resolve within 3s.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* ORDER CONFIRMED SCREEN */}
+          {/* ══════════ CONFIRMED STEP ══════════ */}
           {flowStep === "CONFIRMED" && activeSession && (
-            <div className="rounded border border-ok/40 bg-ok/10 p-6 text-center space-y-5 animate-slidein">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-ok/20 text-2xl text-ok">
-                ✓
+            <div className="flex flex-col items-center gap-5 text-center py-4 animate-slideup">
+              {/* Success icon */}
+              <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-ok/15 border-2 border-ok/40">
+                <span className="text-4xl">✅</span>
+                <div className="absolute inset-0 rounded-full animate-pulse-ring opacity-60" />
               </div>
+
               <div>
                 <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-ok">
-                  PAYMENT RECONCILED & ESCROW LOCKED
+                  Payment Confirmed · Escrow Locked
                 </span>
-                <h3 className="font-display text-lg font-bold uppercase tracking-wider text-foreground mt-1">
-                  Order Successfully Placed!
+                <h3 className="font-display text-xl font-bold text-foreground mt-1">
+                  Order Placed!
                 </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your order has been confirmed and payment is secured in the Arifshops escrow.
+                </p>
               </div>
 
-              <div className="rounded border border-line bg-card p-4 font-mono text-xs text-left space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Customer:</span>
-                  <span className="text-foreground font-bold">{customerName}</span>
+              {/* Receipt card */}
+              <div className="w-full rounded-xl border border-line bg-card overflow-hidden shadow-lg">
+                {/* Receipt header stripe */}
+                <div className="bg-primary/10 border-b border-line px-4 py-2.5 flex items-center justify-between">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-primary">
+                    Arifshops · Digital Receipt
+                  </span>
+                  <span className="font-mono text-[10px] text-muted-foreground">
+                    {new Date().toLocaleDateString("en-ET", { day: "2-digit", month: "short", year: "numeric" })}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Session Ref:</span>
-                  <span className="text-foreground">{activeSession.sessionId}</span>
+                <div className="px-4 py-4 space-y-2.5 font-mono text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Customer</span>
+                    <span className="font-bold text-foreground">{customerName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Phone</span>
+                    <span className="text-foreground">{customerPhone}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Item</span>
+                    <span className="text-foreground text-right max-w-[180px] line-clamp-1">{quantity}x {selectedProduct?.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Delivery To</span>
+                    <span className="text-foreground text-right max-w-[180px] line-clamp-1">{shippingAddress}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Payment Method</span>
+                    <span className="text-foreground">{PAYMENT_OPTIONS.find(o => o.id === paymentProvider)?.label}</span>
+                  </div>
+                  <div className="border-t border-line pt-2 flex justify-between text-sm font-bold">
+                    <span className="text-foreground">Total Paid</span>
+                    <span className="text-primary text-base">{etb(orderTotalUSD)}</span>
+                  </div>
+                  <div className="border-t border-line pt-2 flex justify-between">
+                    <span className="text-muted-foreground">Session Ref</span>
+                    <span className="text-foreground text-[10px]">{activeSession.sessionId}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Item:</span>
-                  <span className="text-foreground">{quantity}x {selectedProduct.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Amount Paid:</span>
-                  <span className="text-primary font-bold">${orderTotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Destination:</span>
-                  <span className="text-foreground">{shippingAddress}</span>
-                </div>
-                <div className="h-px bg-line my-1" />
-                <div className="flex justify-between text-[11px]">
-                  <span className="text-muted-foreground">Escrow Status:</span>
-                  <span className="text-ok font-bold">LOCKED_IN_ESCROW (Station 05)</span>
+                {/* Station 05 badge */}
+                <div className="bg-ok/10 border-t border-ok/30 px-4 py-2.5 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-1.5 w-1.5 rounded-full bg-ok" />
+                    <span className="font-mono text-[10px] font-bold text-ok uppercase tracking-wider">
+                      Station 05 · Escrow Active
+                    </span>
+                  </div>
+                  <span className="font-mono text-[9px] text-muted-foreground">LOCKED_IN_ESCROW</span>
                 </div>
               </div>
 
-              <div className="flex gap-2 justify-center">
+              <div className="flex w-full gap-2">
                 <button
                   type="button"
                   onClick={resetFlow}
-                  className="btn-signal text-xs"
+                  className="flex-1 rounded-xl bg-primary py-3 font-mono text-xs font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 transition-all"
                 >
                   Place Another Order
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    resetFlow();
-                    onClose();
-                  }}
-                  className="btn-op text-xs"
+                  onClick={() => { resetFlow(); onClose(); }}
+                  className="flex-1 rounded-xl border-2 border-line bg-secondary py-3 font-mono text-xs font-bold uppercase tracking-wider text-foreground hover:border-primary hover:text-primary transition-all"
                 >
-                  View in Ops Dashboard
+                  View Dashboard
                 </button>
               </div>
             </div>
