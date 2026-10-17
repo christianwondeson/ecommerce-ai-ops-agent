@@ -118,7 +118,8 @@ export type AuditActionType =
   | 'SUPPLIER_FAILOVER'
   | 'CHECKOUT_RESERVED'
   | 'PAYMENT_RECONCILED'
-  | 'ORPHAN_STOCK_RESTORED';
+  | 'ORPHAN_STOCK_RESTORED'
+  | 'RESTOCK_CONFIRMED';
 
 export interface AuditLog {
   id: string;

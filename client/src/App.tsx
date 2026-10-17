@@ -9,6 +9,7 @@ import { AuditFeed } from "./components/AuditFeed";
 import { AgentConsole } from "./components/AgentConsole";
 import { EscrowLedger } from "./components/EscrowLedger";
 import { CheckoutReconciliation } from "./components/CheckoutReconciliation";
+import { CustomerCheckoutDrawer } from "./components/CustomerCheckoutDrawer";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,6 +22,7 @@ const queryClient = new QueryClient({
 function Dashboard() {
   const qc = useQueryClient();
   const [activeView, setActiveView] = useState<"ALL" | "OPS" | "DISPATCH" | "ESCROW" | "CHECKOUT">("ALL");
+  const [isCheckoutDrawerOpen, setIsCheckoutDrawerOpen] = useState(false);
 
   const { data: products = [] } = useQuery({
     queryKey: ["inventory"],
@@ -117,6 +119,14 @@ function Dashboard() {
               <strong className="text-ok">{deliveredCount}</strong>
             </div>
           </div>
+
+          <button
+            onClick={() => setIsCheckoutDrawerOpen(true)}
+            className="btn-op flex items-center gap-1.5 border-primary/60 bg-primary/10 text-primary hover:bg-primary/20 font-bold px-3 py-2 text-xs shadow-sm"
+          >
+            <span className="text-sm">🛒</span>
+            <span>Simulate Customer Order</span>
+          </button>
 
           <button
             onClick={() => sweepMutation.mutate()}
@@ -218,6 +228,13 @@ function Dashboard() {
           <CheckoutReconciliation sessions={checkoutSessions} />
         </div>
       )}
+
+      {/* CUSTOMER STOREFRONT CHECKOUT DRAWER */}
+      <CustomerCheckoutDrawer
+        isOpen={isCheckoutDrawerOpen}
+        onClose={() => setIsCheckoutDrawerOpen(false)}
+        products={products}
+      />
 
       {/* FOOTER */}
       <footer className="mt-12 flex flex-col items-center justify-between gap-2 border-t border-line pt-4 font-mono text-[10px] text-muted-foreground md:flex-row">

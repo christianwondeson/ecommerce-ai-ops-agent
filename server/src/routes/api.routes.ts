@@ -40,6 +40,15 @@ apiRouter.post('/inventory/simulate-sale', (req, res) => {
   }
 });
 
+apiRouter.post('/inventory/confirm-restock', (req, res) => {
+  const { productId, quantityReceived = 20, notes } = req.body;
+  if (!productId) {
+    return res.status(400).json({ success: false, message: 'Missing productId parameter.' });
+  }
+  const result = inventoryService.confirmStockRestock(productId, Number(quantityReceived), notes);
+  res.json(result);
+});
+
 // ==========================================
 // ORDER & COURIER ENDPOINTS
 // ==========================================

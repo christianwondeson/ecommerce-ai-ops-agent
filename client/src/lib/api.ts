@@ -78,6 +78,15 @@ export const api = {
     return await res.json();
   },
 
+  async confirmRestock(productId: string, quantityReceived: number = 20, notes?: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/api/inventory/confirm-restock`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId, quantityReceived, notes }),
+    });
+    return await res.json();
+  },
+
   async reconcile(orderId: string, deliveryNotes?: string): Promise<unknown> {
     const res = await fetch(`${API_BASE}/api/orders/reconcile`, {
       method: 'POST',
@@ -141,6 +150,19 @@ export const api = {
     const res = await fetch(`${API_BASE}/api/checkout/sessions`);
     const data = await res.json();
     return data.sessions || [];
+  },
+
+  async createCheckout(payload: {
+    customerName: string;
+    customerEmail?: string;
+    items: Array<{ sku: string; quantity: number }>;
+  }): Promise<any> {
+    const res = await fetch(`${API_BASE}/api/checkout/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return await res.json();
   },
 
   async handleCheckoutCallback(sessionId: string, status: 'success' | 'pending' | 'failed' = 'success'): Promise<unknown> {

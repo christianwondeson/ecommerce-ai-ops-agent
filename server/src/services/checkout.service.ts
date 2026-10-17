@@ -1,6 +1,7 @@
 import { db } from '../data/db.js';
 import { CheckoutSession, Order, FinancialEscrow, OrderItem } from '../types/index.js';
 import { emailService } from './email.service.js';
+import { inventoryService } from './inventory.service.js';
 
 export class CheckoutService {
   getAllSessions(): CheckoutSession[] {
@@ -17,7 +18,7 @@ export class CheckoutService {
     customerName: string;
     customerEmail: string;
     items: { sku: string; quantity: number }[];
-  }): { success: boolean; session?: CheckoutSession; message: string } {
+  }): { success: boolean; session?: CheckoutSession; message: string; isOutOfStock?: boolean; productId?: string; sku?: string; availableStock?: number } {
     const sessionItems: OrderItem[] = [];
     let totalAmount = 0;
 
@@ -28,9 +29,20 @@ export class CheckoutService {
         return { success: false, message: `Product ${it.sku} not found.` };
       }
       if (prod.currentStock < it.quantity) {
+        // Auto-flag SKU as critical if requested quantity exceeds available stock
+        inventoryService.flagProductForRestock(
+          prod.id,
+          `Customer attempted to purchase ${it.quantity} units, but only ${prod.currentStock} units are in stock. Blocked by Out-Of-Stock Guard.`,
+          'CRITICAL',
+          'REAL_TIME_INVENTORY'
+        );
         return {
           success: false,
-          message: `Insufficient stock for ${prod.name} (${prod.sku}). Available: ${prod.currentStock}, Requested: ${it.quantity}.`,
+          isOutOfStock: true,
+          productId: prod.id,
+          sku: prod.sku,
+          availableStock: prod.currentStock,
+          message: `Out-of-Stock Guard Alert: ${prod.name} (${prod.sku}) has insufficient stock. Available: ${prod.currentStock}, Requested: ${it.quantity}. Checkout blocked to prevent overselling.`,
         };
       }
 

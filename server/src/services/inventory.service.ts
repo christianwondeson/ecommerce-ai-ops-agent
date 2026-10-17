@@ -160,6 +160,42 @@ export class InventoryService {
 
     return { product, autoFlagged };
   }
+
+  confirmStockRestock(
+    productId: string,
+    quantityReceived: number = 20,
+    notes?: string,
+    source: 'SUPPLIER_INGEST' | 'HUMAN_OVERRIDE' = 'SUPPLIER_INGEST'
+  ): { success: boolean; product?: Product; message: string } {
+    const product = this.getProductById(productId);
+    if (!product) {
+      return { success: false, message: `Product ${productId} not found.` };
+    }
+
+    product.currentStock += quantityReceived;
+    product.lastPoDispatchedAt = undefined;
+    db.recalculateProductMetrics(product.id);
+
+    db.addAudit({
+      actionType: 'RESTOCK_CONFIRMED',
+      summary: `[Supplier Warehouse Ingest] Confirmed delivery arrival of ${quantityReceived} units for SKU ${product.sku} (${product.name}). Catalog stock replenished to ${product.currentStock} units.`,
+      details: {
+        productId: product.id,
+        sku: product.sku,
+        quantityReceived,
+        newStock: product.currentStock,
+        vendor: product.vendorName,
+        notes: notes || 'Automated factory supplier batch check-in.',
+      },
+      source: 'MULTI_AGENT_DAG',
+    });
+
+    return {
+      success: true,
+      product,
+      message: `Stock replenished! Received ${quantityReceived} units for ${product.sku}. Current stock: ${product.currentStock}.`,
+    };
+  }
 }
 
 export const inventoryService = new InventoryService();

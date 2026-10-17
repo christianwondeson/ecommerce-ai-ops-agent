@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api, type Product } from "@/lib/api";
@@ -8,6 +9,74 @@ const urgencyClass: Record<string, string> = {
   MEDIUM: "bg-caution text-background",
   LOW: "bg-secondary text-foreground",
 };
+
+function SupplierArrivalBar({
+  product,
+  onIngestComplete,
+}: {
+  product: Product;
+  onIngestComplete: () => void;
+}) {
+  const qc = useQueryClient();
+  const [secondsLeft, setSecondsLeft] = useState<number>(() => {
+    if (!product.lastPoDispatchedAt) return 0;
+    const elapsed = Math.floor((Date.now() - new Date(product.lastPoDispatchedAt).getTime()) / 1000);
+    return Math.max(0, 25 - elapsed);
+  });
+  const autoIngestedRef = useRef(false);
+
+  const confirmRestock = useMutation({
+    mutationFn: () => api.confirmRestock(product.id, product.suggestedReorderQuantity),
+    onSuccess: (data: any) => {
+      qc.invalidateQueries();
+      toast.success(data.message || `Supplier batch delivery checked in! +${product.suggestedReorderQuantity} stock replenished.`);
+      onIngestComplete();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  useEffect(() => {
+    if (!product.lastPoDispatchedAt) return;
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - new Date(product.lastPoDispatchedAt!).getTime()) / 1000);
+      const remaining = Math.max(0, 25 - elapsed);
+      setSecondsLeft(remaining);
+
+      if (remaining === 0 && !autoIngestedRef.current && !confirmRestock.isPending) {
+        autoIngestedRef.current = true;
+        confirmRestock.mutate();
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [product.lastPoDispatchedAt]);
+
+  if (!product.lastPoDispatchedAt) return null;
+
+  return (
+    <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded border border-ok/40 bg-ok/10 px-3 py-1.5 font-mono text-[11px]">
+      <div className="flex items-center gap-2 text-ok">
+        <span className="text-sm animate-bounce">🚚</span>
+        <div>
+          <span>Factory Batch In-Transit: </span>
+          <strong className="text-foreground">{secondsLeft > 0 ? `${secondsLeft}s remaining` : 'Arrived at Warehouse!'}</strong>
+          <span className="text-muted-foreground ml-1">(+{product.suggestedReorderQuantity} units)</span>
+        </div>
+      </div>
+      <button
+        onClick={() => {
+          autoIngestedRef.current = true;
+          confirmRestock.mutate();
+        }}
+        disabled={confirmRestock.isPending}
+        className="rounded border border-ok/50 bg-ok/20 px-2.5 py-0.5 text-[10px] font-bold text-ok hover:bg-ok/30 transition-all shadow-sm"
+        title="Bypass countdown and instantly ingest factory inventory batch"
+      >
+        {confirmRestock.isPending ? "Ingesting…" : "⚡ Fast-Forward Ingest"}
+      </button>
+    </div>
+  );
+}
 
 export function Inventory({ products }: { products: Product[] }) {
   const qc = useQueryClient();
@@ -41,12 +110,17 @@ export function Inventory({ products }: { products: Product[] }) {
               <div className="col-span-12 md:col-span-5">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="font-mono text-[10px] text-muted-foreground">{p.sku}</span>
-                  {p.isRestockFlagged && (
+                  {p.currentStock === 0 && (
+                    <span className="px-1.5 py-0.5 font-mono text-[9px] font-bold tracking-widest bg-destructive text-destructive-foreground animate-blink">
+                      DEPLETED (0)
+                    </span>
+                  )}
+                  {p.isRestockFlagged && p.currentStock > 0 && (
                     <span className={cn("px-1.5 py-0.5 font-mono text-[9px] font-bold tracking-widest", urgencyClass[p.restockUrgency ?? "LOW"])}>
                       {p.restockUrgency ?? "FLAG"}
                     </span>
                   )}
-                  {p.lastPoDispatchedAt && <span className="font-mono text-[9px] tracking-widest text-ok">PO SENT</span>}
+                  {p.lastPoDispatchedAt && <span className="font-mono text-[9px] tracking-widest text-ok font-bold">PO SENT</span>}
                   
                   {/* PREDICTIVE DIR BADGE */}
                   <span className={cn(
@@ -61,7 +135,7 @@ export function Inventory({ products }: { products: Product[] }) {
                   </span>
                 </div>
 
-                <p className="mt-1 text-sm leading-snug">{p.name}</p>
+                <p className="mt-1 text-sm leading-snug font-medium">{p.name}</p>
                 <div className="mt-1 flex flex-wrap items-center gap-2 font-mono text-[10px] text-muted-foreground">
                   <span>{p.vendorName} · ${p.unitPrice.toFixed(2)}</span>
                   <span>·</span>
@@ -74,19 +148,24 @@ export function Inventory({ products }: { products: Product[] }) {
 
                 {p.predictive?.secondarySupplier && (
                   <div className="mt-1 text-[10px] font-mono text-muted-foreground/80">
-                    <span className="text-primary">Backup:</span> {p.predictive.secondarySupplier.name} ({p.predictive.secondarySupplier.leadTimeDays}d lead)
+                    <span className="text-primary font-semibold">Backup:</span> {p.predictive.secondarySupplier.name} ({p.predictive.secondarySupplier.leadTimeDays}d lead)
                   </div>
                 )}
+
+                {/* SUPPLIER TRANSIT COUNTDOWN & INGEST BAR */}
+                <SupplierArrivalBar product={p} onIngestComplete={refresh} />
               </div>
 
               <div className="col-span-6 md:col-span-3">
                 <div className="flex items-baseline gap-1">
-                  <span className={cn("font-display text-2xl font-bold", low ? "text-primary" : "text-foreground")}>{p.currentStock}</span>
+                  <span className={cn("font-display text-2xl font-bold", p.currentStock === 0 ? "text-destructive" : low ? "text-primary" : "text-foreground")}>
+                    {p.currentStock}
+                  </span>
                   <span className="font-mono text-[10px] text-muted-foreground">/ min {p.reorderThreshold}</span>
                 </div>
                 <div className="mt-1.5 flex h-1.5 gap-px">
                   {Array.from({ length: 20 }).map((_, i) => (
-                    <div key={i} className={cn("flex-1", i / 20 < ratio ? (low ? "bg-primary" : "bg-ok") : "bg-secondary")} />
+                    <div key={i} className={cn("flex-1", i / 20 < ratio ? (low ? (p.currentStock === 0 ? "bg-destructive" : "bg-primary") : "bg-ok") : "bg-secondary")} />
                   ))}
                 </div>
               </div>
