@@ -99,7 +99,7 @@ export function CustomerCheckoutDrawer({
   const [customerName, setCustomerName] = useState("Abebech Tadesse");
   const [customerPhone, setCustomerPhone] = useState("+251 911 458920");
   const [shippingAddress, setShippingAddress] = useState("Bole Medhanialem, Addis Ababa");
-  const [paymentProvider, setPaymentProvider] = useState<"ARIFPAY_TELEBIRR" | "ARIFPAY_CBE" | "CARD">("ARIFPAY_TELEBIRR");
+  const [paymentProvider, setPaymentProvider] = useState<"TELEBIRR" | "CBE" | "CARD">("TELEBIRR");
 
   const [activeSession, setActiveSession] = useState<CheckoutSession | null>(null);
   const [flowStep, setFlowStep] = useState<"FORM" | "USSD_SIM" | "CONFIRMED">("FORM");
@@ -191,14 +191,14 @@ export function CustomerCheckoutDrawer({
 
   const PAYMENT_OPTIONS = [
     {
-      id: "ARIFPAY_TELEBIRR" as const,
+      id: "TELEBIRR" as const,
       icon: "📱",
       label: "Telebirr",
       sub: "USSD push",
       color: "oklch(0.7 0.19 45)",
     },
     {
-      id: "ARIFPAY_CBE" as const,
+      id: "CBE" as const,
       icon: "🏦",
       label: "CBE Birr",
       sub: "Mobile banking",
@@ -232,10 +232,10 @@ export function CustomerCheckoutDrawer({
             </div>
             <div>
               <h2 className="font-display text-sm font-bold uppercase tracking-wider text-foreground">
-                Arifshops Checkout
+                Express Storefront Checkout
               </h2>
               <p className="text-[11px] text-muted-foreground font-mono">
-                Powered by Arifpay · Addis Ababa
+                Instant Digital Commerce · Addis Ababa
               </p>
             </div>
           </div>
@@ -449,7 +449,7 @@ export function CustomerCheckoutDrawer({
                     <span>{etb(deliveryFeeUSD)}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground text-[10px]">
-                    <span>Arifpay Marketplace Fee (12%)</span>
+                    <span>Marketplace Platform Fee (12%)</span>
                     <span className="text-ok">Protected by Escrow</span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-line text-base font-bold text-foreground">
@@ -495,7 +495,7 @@ export function CustomerCheckoutDrawer({
                       "flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-primary/40 bg-primary/5 py-3 px-2 transition-all text-center",
                       "hover:border-primary hover:bg-primary/10 hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
                     )}
-                    title="Buyer returns to page before Arifpay webhook arrives — AI healer resolves"
+                    title="Buyer returns to page before payment gateway webhook arrives — AI healer resolves"
                   >
                     <span className="text-lg">🟡</span>
                     <span className="font-mono text-[11px] font-bold text-primary uppercase tracking-wide">Race Lag</span>
@@ -529,7 +529,7 @@ export function CustomerCheckoutDrawer({
                 <div className="mx-auto w-32 rounded-2xl border-4 border-foreground/20 bg-secondary/40 p-3 shadow-2xl">
                   <div className="rounded-lg bg-primary/20 py-4 text-3xl animate-pulse">📱</div>
                   <div className="mt-2 space-y-1">
-                    <div className="rounded bg-secondary py-1 font-mono text-[9px] text-muted-foreground">Arifpay USSD</div>
+                    <div className="rounded bg-secondary py-1 font-mono text-[9px] text-muted-foreground">Mobile Gateway USSD</div>
                     <div className="rounded bg-primary/30 py-1 font-mono text-[9px] font-bold text-primary animate-blink">
                       *127*2*{String(Math.floor(Math.random() * 9999 + 1000)).padStart(4, "0")}#
                     </div>
@@ -545,7 +545,7 @@ export function CustomerCheckoutDrawer({
 
               <div>
                 <h3 className="font-display text-base font-bold text-foreground">
-                  {simMode === "ABANDON" ? "Checkout Abandoned" : "Arifpay USSD Push Sent"}
+                  {simMode === "ABANDON" ? "Checkout Abandoned" : "USSD Push Sent"}
                 </h3>
                 <p className="mt-1 font-mono text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">
                   {simMode === "ABANDON"
@@ -582,7 +582,7 @@ export function CustomerCheckoutDrawer({
                     ⚠ Race Condition Detected
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                    Browser returned from payment redirect before the Arifpay webhook arrived.
+                    Browser returned from payment redirect before the payment gateway webhook arrived.
                     Autonomous Payment Healer is polling the gateway and will resolve within 3s.
                   </p>
                 </div>
@@ -607,7 +607,7 @@ export function CustomerCheckoutDrawer({
                   Order Placed!
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Your order has been confirmed and payment is secured in the Arifshops escrow.
+                  Your order has been confirmed and payment is secured in marketplace escrow.
                 </p>
               </div>
 
@@ -616,7 +616,7 @@ export function CustomerCheckoutDrawer({
                 {/* Receipt header stripe */}
                 <div className="bg-primary/10 border-b border-line px-4 py-2.5 flex items-center justify-between">
                   <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-primary">
-                    Arifshops · Digital Receipt
+                    Express Storefront · Digital Receipt
                   </span>
                   <span className="font-mono text-[10px] text-muted-foreground">
                     {new Date().toLocaleDateString("en-ET", { day: "2-digit", month: "short", year: "numeric" })}
