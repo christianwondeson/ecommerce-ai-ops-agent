@@ -1,4 +1,5 @@
 import type { AuditLog } from "@/lib/api";
+import { formatCurrencyString } from "@/lib/currency";
 
 const color: Record<string, string> = {
   RESTOCK_FLAG: "text-caution",
@@ -33,7 +34,7 @@ export function AuditFeed({ logs }: { logs: AuditLog[] }) {
               <span className={color[l.actionType] ?? "text-foreground"}>{l.actionType}</span>
               <span className="text-muted-foreground">{new Date(l.timestamp).toLocaleTimeString([], { hour12: false })}</span>
             </div>
-            <p className="mt-1 font-sans text-xs leading-relaxed text-foreground/80">{l.summary.replace(/^\[[^\]]+\]\s*/, "")}</p>
+            <p className="mt-1 font-sans text-xs leading-relaxed text-foreground/80">{formatCurrencyString(l.summary.replace(/^\[[^\]]+\]\s*/, ""))}</p>
             <p className="mt-0.5 text-[9px] tracking-widest text-muted-foreground">via {l.source.replace(/_/g, " ")}</p>
           </li>
         ))}

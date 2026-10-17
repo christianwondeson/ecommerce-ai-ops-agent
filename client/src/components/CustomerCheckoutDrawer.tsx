@@ -3,14 +3,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api, type Product, type CheckoutSession } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { formatETB } from "@/lib/currency";
 
 // ─── ETB Currency Formatter ──────────────────────────────────────────────────
-const ETB_RATE = 127.5; // 1 USD ≈ 127.5 ETB (illustrative rate)
 function etb(usd: number): string {
-  return ` ETB ${(usd * ETB_RATE).toLocaleString("en-ET", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+  return formatETB(usd);
 }
 
 // ─── Step Progress Indicator ─────────────────────────────────────────────────

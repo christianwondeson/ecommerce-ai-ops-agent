@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api, type CheckoutSession } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { formatETB } from "@/lib/currency";
 
 const statusBadge: Record<string, string> = {
   RESERVED_PENDING: "bg-caution/15 text-caution border-caution/40",
@@ -135,7 +136,7 @@ export function CheckoutReconciliation({ sessions }: { sessions: CheckoutSession
             <div className="col-span-6 md:col-span-4 font-mono text-xs">
               <div className="flex items-baseline justify-between">
                 <span className="text-muted-foreground">Total:</span>
-                <strong className="text-foreground">${s.totalAmount.toFixed(2)}</strong>
+                <strong className="text-primary font-bold">{formatETB(s.totalAmount)}</strong>
               </div>
               <p className="mt-0.5 text-[10px] text-muted-foreground">
                 Items: {s.items.map((i) => `${i.quantity}× ${i.sku}`).join(", ")}

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api, type Order } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { formatETB } from "@/lib/currency";
 
 const STAGES = ["PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED"];
 
@@ -46,7 +47,7 @@ export function Orders({ orders }: { orders: Order[] }) {
                   </div>
                   <p className="font-display text-sm font-semibold">{o.customerName}</p>
                 </div>
-                <p className="font-display text-lg font-bold">${o.totalAmount.toFixed(2)}</p>
+                <p className="font-display text-base font-bold text-primary">{formatETB(o.totalAmount)}</p>
               </div>
 
               {/* PROGRESS STAGES */}

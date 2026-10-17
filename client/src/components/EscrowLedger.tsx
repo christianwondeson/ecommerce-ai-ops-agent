@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api, type FinancialEscrow } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { formatETB } from "@/lib/currency";
 
 const statusColor: Record<string, string> = {
   LOCKED: "bg-caution/20 text-caution border-caution/40",
@@ -49,19 +50,19 @@ export function EscrowLedger({ escrows }: { escrows: FinancialEscrow[] }) {
       <div className="grid grid-cols-2 gap-px border-b border-line bg-line sm:grid-cols-4 font-mono text-xs">
         <div className="bg-card p-4">
           <p className="text-[10px] uppercase text-muted-foreground">Marketplace GMV</p>
-          <p className="mt-1 font-display text-lg font-bold text-foreground">${totalGross.toFixed(2)}</p>
+          <p className="mt-1 font-display text-base font-bold text-foreground">{formatETB(totalGross)}</p>
         </div>
         <div className="bg-card p-4">
           <p className="text-[10px] uppercase text-muted-foreground">Platform 12% Take</p>
-          <p className="mt-1 font-display text-lg font-bold text-primary">${totalPlatformTake.toFixed(2)}</p>
+          <p className="mt-1 font-display text-base font-bold text-primary">{formatETB(totalPlatformTake)}</p>
         </div>
         <div className="bg-card p-4">
           <p className="text-[10px] uppercase text-muted-foreground">Total Vendor Payouts</p>
-          <p className="mt-1 font-display text-lg font-bold text-ok">${totalVendorPayout.toFixed(2)}</p>
+          <p className="mt-1 font-display text-base font-bold text-ok">{formatETB(totalVendorPayout)}</p>
         </div>
         <div className="bg-card p-4">
           <p className="text-[10px] uppercase text-muted-foreground">Escrow Held / Locked</p>
-          <p className="mt-1 font-display text-lg font-bold text-caution">${totalLockedOrHeld.toFixed(2)}</p>
+          <p className="mt-1 font-display text-base font-bold text-caution">{formatETB(totalLockedOrHeld)}</p>
         </div>
       </div>
 
@@ -84,15 +85,15 @@ export function EscrowLedger({ escrows }: { escrows: FinancialEscrow[] }) {
               <div className="col-span-6 md:col-span-4 font-mono text-xs space-y-0.5">
                 <div className="flex justify-between text-muted-foreground text-[11px]">
                   <span>Gross:</span>
-                  <strong className="text-foreground">${e.grossAmount.toFixed(2)}</strong>
+                  <strong className="text-foreground">{formatETB(e.grossAmount)}</strong>
                 </div>
                 <div className="flex justify-between text-muted-foreground text-[11px]">
                   <span>Platform Fee (12%):</span>
-                  <strong className="text-primary">−${e.platformTake.toFixed(2)}</strong>
+                  <strong className="text-primary">−{formatETB(e.platformTake)}</strong>
                 </div>
                 <div className="flex justify-between border-t border-dashed border-line pt-1 text-[11px]">
                   <span>Net Vendor Payout:</span>
-                  <strong className="text-ok">${e.netVendorPayout.toFixed(2)}</strong>
+                  <strong className="text-ok">{formatETB(e.netVendorPayout)}</strong>
                 </div>
               </div>
 

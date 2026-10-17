@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api, type Product } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { formatETB } from "@/lib/currency";
 
 const urgencyClass: Record<string, string> = {
   CRITICAL: "bg-destructive text-destructive-foreground",
@@ -137,7 +138,7 @@ export function Inventory({ products }: { products: Product[] }) {
 
                 <p className="mt-1 text-sm leading-snug font-medium">{p.name}</p>
                 <div className="mt-1 flex flex-wrap items-center gap-2 font-mono text-[10px] text-muted-foreground">
-                  <span>{p.vendorName} · ${p.unitPrice.toFixed(2)}</span>
+                  <span>{p.vendorName} · <strong className="text-foreground font-semibold">{formatETB(p.unitPrice)}</strong></span>
                   <span>·</span>
                   <span>Burn: {p.predictive?.burnRatePerDay ?? 1}/d</span>
                   <span>·</span>

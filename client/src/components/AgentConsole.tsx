@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { formatCurrencyString } from "@/lib/currency";
 
 type Msg = { role: "user" | "model"; text: string; tools?: string[] | undefined };
 const PROMPTS = [
@@ -60,7 +61,9 @@ export function AgentConsole() {
         {msgs.map((m, i) => (
           <div key={i} className="animate-slidein">
             <p className="label-tag mb-1">{m.role === "user" ? "You" : "Operator"}</p>
-            <p className={m.role === "user" ? "font-mono text-xs text-primary" : "whitespace-pre-wrap text-sm leading-relaxed"}>{m.text}</p>
+            <p className={m.role === "user" ? "font-mono text-xs text-primary" : "whitespace-pre-wrap text-sm leading-relaxed"}>
+              {formatCurrencyString(m.text)}
+            </p>
             {m.tools && m.tools.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {m.tools.map((t, j) => <span key={j} className="bg-secondary px-1.5 py-0.5 font-mono text-[9px] text-ok">⚙ {t}</span>)}
