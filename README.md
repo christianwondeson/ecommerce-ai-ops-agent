@@ -8,7 +8,7 @@
 
 > **Level 1 Assessment Project – Full Stack AI Web Developer (Advanced Enterprise Revision)**  
 > **Candidate:** Christian Wondeson  
-> **Reviewer:** Kidus (`kidus@brain3.ai`)  
+> **Reviewer:** Kidus (`brain3`)  
 > **Target Role:** E-Commerce Store & Vendor Operations Specialist  
 > **Target Industry:** Multi-Vendor E-Commerce & Retail Marketplaces  
 > **Live Web Application:** [https://ecommerce-ai-ops-agent-red.vercel.app/](https://ecommerce-ai-ops-agent-red.vercel.app/)  
