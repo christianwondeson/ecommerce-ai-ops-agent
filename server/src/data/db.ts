@@ -1,4 +1,5 @@
 import { Product, Order, AuditLog, FinancialEscrow, CheckoutSession } from '../types/index.js';
+import { formatETB } from '../utils/currency.js';
 
 export const initialProducts: Product[] = [
   {
@@ -305,7 +306,7 @@ export const initialAuditLogs: AuditLog[] = [
     id: 'audit-init-02',
     timestamp: new Date(Date.now() - 3600000 * 20).toISOString(),
     actionType: 'ESCROW_RELEASED',
-    summary: 'Released $245.64 vendor escrow payout to Nordic Seating Solutions following verified delivery of Order #ORD-2026-1004.',
+    summary: `Released ${formatETB(245.64)} vendor escrow payout to Nordic Seating Solutions following verified delivery of Order #ORD-2026-1004.`,
     details: {
       orderId: 'ord-1004',
       orderNumber: 'ORD-2026-1004',
@@ -413,7 +414,7 @@ class DatabaseStore {
 
       this.addAudit({
         actionType: 'ESCROW_RELEASED',
-        summary: `[Financial Settlement Engine] Disbursed $${escrow.netVendorPayout.toFixed(2)} vendor escrow to ${escrow.vendorName} for Order #${escrow.orderNumber}. Platform retained $${escrow.platformTake.toFixed(2)}.`,
+        summary: `[Financial Settlement Engine] Disbursed ${formatETB(escrow.netVendorPayout)} vendor escrow to ${escrow.vendorName} for Order #${escrow.orderNumber}. Platform retained ${formatETB(escrow.platformTake)}.`,
         details: {
           escrowId: escrow.id,
           orderNumber: escrow.orderNumber,

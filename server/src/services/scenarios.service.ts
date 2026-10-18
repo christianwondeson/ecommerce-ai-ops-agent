@@ -1,6 +1,7 @@
 import { db } from '../data/db.js';
 import { emailService } from './email.service.js';
 import { inventoryService } from './inventory.service.js';
+import { formatETB } from '../utils/currency.js';
 
 export class ScenariosService {
   async triggerFlashSaleSurge(): Promise<{
@@ -94,22 +95,32 @@ export class ScenariosService {
     // Send proactive customer alert email
     await emailService.sendEmail({
       to: order.customerEmail,
-      subject: `[PROACTIVE UPDATE: #${order.orderNumber}] Delivery Exception Detected & Rerouted`,
+      subject: `[PROACTIVE UPDATE: #${order.orderNumber}] Delivery Exception Detected & Rerouted (${formatETB(order.totalAmount)})`,
       htmlContent: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2 style="color: #ef4444;">DELIVERY CORRIDOR DELAY DETECTED</h2>
-          <p>Dear ${order.customerName},</p>
-          <p>Our autonomous logistics monitoring system detected an unexpected carrier vehicle breakdown with <strong>${order.courierCarrier}</strong> for your order <strong>#${order.orderNumber}</strong>.</p>
-          <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 12px; margin: 15px 0;">
-            <strong>Autonomous Mitigation Executed:</strong><br/>
-            Package automatically rerouted to our secondary priority logistics partner. Revised delivery window: Tomorrow by 1:00 PM.
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1e293b;">
+          <div style="border-bottom: 2px solid #ef4444; padding-bottom: 16px; margin-bottom: 20px;">
+            <span style="font-size: 11px; font-weight: 700; color: #ef4444; letter-spacing: 1px; text-transform: uppercase;">Delivery Corridor Delay Detected &bull; Autonomous Mitigation</span>
+            <h1 style="color: #0f172a; margin: 6px 0 0; font-size: 20px;">Urgent Update Regarding Order #${order.orderNumber}</h1>
           </div>
-          <p>We apologize for the friction and have credited your account with free expedited shipping on your next order.</p>
+
+          <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-bottom: 20px;">
+            Dear ${order.customerName}, our autonomous logistics monitoring system detected an unexpected vehicle breakdown with <strong>${order.courierCarrier}</strong> for your order (Total Value: <strong>${formatETB(order.totalAmount)}</strong>).
+          </p>
+
+          <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 14px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; color: #991b1b; line-height: 1.5;">
+            <strong>Autonomous Mitigation Executed:</strong><br/>
+            Your parcel was immediately rerouted to our secondary priority logistics partner. Revised delivery window: Tomorrow by 1:00 PM.
+          </div>
+
+          <p style="font-size: 13px; color: #64748b;">
+            We sincerely apologize for this slight delay and have credited your account with free expedited shipping for your next order.
+          </p>
         </div>
       `,
     });
 
-    const summary = `Carrier breakdown simulated for Order #${order.orderNumber} (${order.courierCarrier}). AI Logistics Agent caught delay, held $${escrow?.netVendorPayout || 0} vendor escrow, rerouted shipment to secondary dispatch, and emailed proactive customer notice.`;
+    const escrowHeldETB = formatETB(escrow?.netVendorPayout || 0);
+    const summary = `Carrier breakdown simulated for Order #${order.orderNumber} (${order.courierCarrier}). AI Logistics Agent caught delay, held ${escrowHeldETB} vendor escrow on DISPUTE_HOLD, rerouted shipment to secondary dispatch, and emailed proactive customer notice.`;
 
     db.addAudit({
       actionType: 'CARRIER_EXCEPTION',
@@ -118,7 +129,7 @@ export class ScenariosService {
         orderId: order.id,
         orderNumber: order.orderNumber,
         carrier: order.courierCarrier,
-        escrowHeld: escrow?.netVendorPayout,
+        escrowHeldETB,
       },
       source: 'MULTI_AGENT_DAG',
     });

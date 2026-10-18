@@ -2,6 +2,7 @@ import { db } from '../data/db.js';
 import { CheckoutSession, Order, FinancialEscrow, OrderItem } from '../types/index.js';
 import { emailService } from './email.service.js';
 import { inventoryService } from './inventory.service.js';
+import { formatETB, toETB } from '../utils/currency.js';
 
 export class CheckoutService {
   getAllSessions(): CheckoutSession[] {
@@ -17,10 +18,17 @@ export class CheckoutService {
   createCheckoutSession(input: {
     customerName: string;
     customerEmail: string;
+    customerPhone?: string;
+    subcity?: string;
+    streetAddress?: string;
+    deliveryOption?: string;
+    deliveryFeeUSD?: number;
+    discountUSD?: number;
+    finalTotalUSD?: number;
     items: { sku: string; quantity: number }[];
   }): { success: boolean; session?: CheckoutSession; message: string; isOutOfStock?: boolean; productId?: string; sku?: string; availableStock?: number } {
     const sessionItems: OrderItem[] = [];
-    let totalAmount = 0;
+    let itemsSubtotal = 0;
 
     // 1. Verify stock and reserve
     for (const it of input.items) {
@@ -51,7 +59,7 @@ export class CheckoutService {
       db.recalculateProductMetrics(prod.id);
 
       const itemTotal = prod.unitPrice * it.quantity;
-      totalAmount += itemTotal;
+      itemsSubtotal += itemTotal;
       sessionItems.push({
         sku: prod.sku,
         name: prod.name,
@@ -60,14 +68,27 @@ export class CheckoutService {
       });
     }
 
+    const deliveryFee = typeof input.deliveryFeeUSD === 'number' ? input.deliveryFeeUSD : 0;
+    const discount = typeof input.discountUSD === 'number' ? input.discountUSD : 0;
+    const exactTotalUSD = typeof input.finalTotalUSD === 'number'
+      ? input.finalTotalUSD
+      : Math.max(0, itemsSubtotal + deliveryFee - discount);
+
     const sessionId = `cs_live_${Math.random().toString(36).substring(2, 9)}`;
     const session: CheckoutSession = {
       id: `cs-${Date.now().toString().slice(-4)}`,
       sessionId,
       customerName: input.customerName,
       customerEmail: input.customerEmail,
+      customerPhone: input.customerPhone,
+      subcity: input.subcity,
+      streetAddress: input.streetAddress,
+      deliveryOption: input.deliveryOption,
+      deliveryFeeUSD: deliveryFee,
+      discountUSD: discount,
       items: sessionItems,
-      totalAmount: Number(totalAmount.toFixed(2)),
+      totalAmount: Number(exactTotalUSD.toFixed(2)),
+      totalAmountETB: toETB(exactTotalUSD),
       status: 'RESERVED_PENDING',
       createdAt: new Date().toISOString(),
       gatewayReference: `gw_ref_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
@@ -79,11 +100,12 @@ export class CheckoutService {
 
     db.addAudit({
       actionType: 'CHECKOUT_RESERVED',
-      summary: `[Checkout Engine] Initiated Checkout Session #${session.sessionId} for ${session.customerName} ($${session.totalAmount.toFixed(2)}). Reserved ${session.items.map((i) => `${i.quantity}x ${i.sku}`).join(', ')} to prevent inventory starvation.`,
+      summary: `[Checkout Engine] Initiated Checkout Session #${session.sessionId} for ${session.customerName} (${formatETB(session.totalAmount)}). Reserved ${session.items.map((i) => `${i.quantity}x ${i.sku}`).join(', ')} to prevent inventory starvation.`,
       details: {
         sessionId: session.sessionId,
         customerName: session.customerName,
-        totalAmount: session.totalAmount,
+        totalAmountETB: formatETB(session.totalAmount),
+        totalAmountUSD: session.totalAmount,
         items: session.items,
       },
       source: 'MULTI_AGENT_DAG',
@@ -92,7 +114,7 @@ export class CheckoutService {
     return {
       success: true,
       session,
-      message: `Checkout session ${sessionId} created with inventory reserved.`,
+      message: `Checkout session ${sessionId} created with inventory reserved. Total: ${formatETB(session.totalAmount)}`,
     };
   }
 
@@ -169,8 +191,15 @@ export class CheckoutService {
       orderNumber,
       customerName: session.customerName,
       customerEmail: session.customerEmail,
+      customerPhone: session.customerPhone,
+      subcity: session.subcity,
+      streetAddress: session.streetAddress,
+      deliveryOption: session.deliveryOption,
+      deliveryFeeUSD: session.deliveryFeeUSD,
+      discountUSD: session.discountUSD,
       items: session.items,
       totalAmount: session.totalAmount,
+      totalAmountETB: toETB(session.totalAmount),
       status: 'IN_TRANSIT',
       courierCarrier: 'Express Courier Logistics (ECL)',
       trackingNumber: `ECL-${Math.floor(100000000 + Math.random() * 900000000)}-ADD`,
@@ -205,36 +234,128 @@ export class CheckoutService {
 
     db.escrows.unshift(newEscrow);
 
-    // Send customer order confirmation email
+    const itemsSubtotalUSD = session.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const deliveryFeeUSD = session.deliveryFeeUSD || 0;
+    const discountUSD = session.discountUSD || 0;
+
+    // Send customer order confirmation email with exact ETB amounts and full breakdown
     await emailService.sendEmail({
       to: session.customerEmail,
-      subject: `[ORDER CONFIRMED #${newOrder.orderNumber}] Payment Verified & Dispatch Initiated`,
+      subject: `[ORDER CONFIRMED #${newOrder.orderNumber}] Payment Verified & Dispatch Initiated (${formatETB(session.totalAmount)})`,
       htmlContent: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2 style="color: #2563eb;">PAYMENT VERIFIED & ORDER CONFIRMED</h2>
-          <p>Dear ${session.customerName},</p>
-          <p>Thank you for shopping with us! Your payment of <strong>$${session.totalAmount.toFixed(2)}</strong> (Gateway Ref: <code>${session.gatewayReference}</code>) has been successfully cleared and reconciled by our autonomous checkout engine.</p>
-          <div style="background: #f8fafc; padding: 15px; border-radius: 6px; margin: 15px 0;">
-            <p><strong>Order Number:</strong> ${newOrder.orderNumber}</p>
-            <p><strong>Tracking Number:</strong> ${newOrder.trackingNumber} (${newOrder.courierCarrier})</p>
-            <p><strong>Items:</strong> ${session.items.map((i) => `${i.quantity}x ${i.name}`).join(', ')}</p>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1e293b;">
+          <div style="border-bottom: 2px solid #2563eb; padding-bottom: 16px; margin-bottom: 20px;">
+            <span style="font-size: 11px; font-weight: 700; color: #2563eb; letter-spacing: 1px; text-transform: uppercase;">Payment Cleared &bull; Order Confirmed</span>
+            <h1 style="color: #0f172a; margin: 6px 0 0; font-size: 22px;">Thank you for your order, ${session.customerName}!</h1>
           </div>
-          <p style="font-size: 12px; color: #64748b;">Vendor settlement is held in zero-trust escrow until carrier delivery proof confirmation.</p>
+
+          <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-bottom: 20px;">
+            Your payment has been successfully cleared and reconciled by our autonomous checkout engine. Your order has been dispatched for courier fulfillment.
+          </p>
+
+          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin-bottom: 24px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+              <tr>
+                <td style="padding: 6px 0; color: #64748b;">Order Number:</td>
+                <td style="padding: 6px 0; font-weight: 600; text-align: right; color: #0f172a;">${newOrder.orderNumber}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b;">Payment Method / Gateway:</td>
+                <td style="padding: 6px 0; font-weight: 600; text-align: right; color: #0f172a;">Local Mobile Money (Ref: <code>${session.gatewayReference}</code>)</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b;">Courier &amp; Tracking:</td>
+                <td style="padding: 6px 0; font-weight: 600; text-align: right; color: #0f172a;">${newOrder.courierCarrier} &bull; <code>${newOrder.trackingNumber}</code></td>
+              </tr>
+              ${session.subcity ? `
+              <tr>
+                <td style="padding: 6px 0; color: #64748b;">Delivery Destination:</td>
+                <td style="padding: 6px 0; font-weight: 600; text-align: right; color: #0f172a;">📍 ${session.subcity}, Addis Ababa</td>
+              </tr>
+              ` : ''}
+              ${session.customerPhone ? `
+              <tr>
+                <td style="padding: 6px 0; color: #64748b;">Contact Mobile:</td>
+                <td style="padding: 6px 0; font-weight: 600; text-align: right; color: #0f172a;">${session.customerPhone}</td>
+              </tr>
+              ` : ''}
+            </table>
+          </div>
+
+          <h3 style="font-size: 14px; font-weight: 600; color: #0f172a; margin: 0 0 12px; text-transform: uppercase; letter-spacing: 0.5px;">Order Items</h3>
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;">
+            <thead>
+              <tr style="border-bottom: 1px solid #cbd5e1; text-align: left; color: #64748b; font-size: 11px;">
+                <th style="padding: 8px 4px;">Item Description</th>
+                <th style="padding: 8px 4px; text-align: center;">Qty</th>
+                <th style="padding: 8px 4px; text-align: right;">Unit Price (ETB)</th>
+                <th style="padding: 8px 4px; text-align: right;">Line Total (ETB)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${session.items.map((i) => `
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                  <td style="padding: 10px 4px;">
+                    <strong>${i.name}</strong><br/>
+                    <span style="color: #64748b; font-size: 11px;">SKU: ${i.sku}</span>
+                  </td>
+                  <td style="padding: 10px 4px; text-align: center;">${i.quantity}</td>
+                  <td style="padding: 10px 4px; text-align: right;">${formatETB(i.price)}</td>
+                  <td style="padding: 10px 4px; text-align: right; font-weight: 600;">${formatETB(i.price * i.quantity)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <!-- Exact Financial Breakdown -->
+          <div style="border-top: 2px solid #e2e8f0; padding-top: 14px; margin-bottom: 24px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+              <tr>
+                <td style="padding: 4px 0; color: #64748b;">Items Subtotal:</td>
+                <td style="padding: 4px 0; text-align: right; font-weight: 500;">${formatETB(itemsSubtotalUSD)}</td>
+              </tr>
+              ${deliveryFeeUSD > 0 ? `
+              <tr>
+                <td style="padding: 4px 0; color: #64748b;">Courier Delivery (${session.deliveryOption || 'Priority Express'}):</td>
+                <td style="padding: 4px 0; text-align: right; font-weight: 500;">+ ${formatETB(deliveryFeeUSD)}</td>
+              </tr>
+              ` : `
+              <tr>
+                <td style="padding: 4px 0; color: #64748b;">Courier Delivery:</td>
+                <td style="padding: 4px 0; text-align: right; color: #16a34a; font-weight: 600;">FREE (Standard Tier)</td>
+              </tr>
+              `}
+              ${discountUSD > 0 ? `
+              <tr>
+                <td style="padding: 4px 0; color: #16a34a;">Discount (Promo Applied):</td>
+                <td style="padding: 4px 0; text-align: right; color: #16a34a; font-weight: 600;">- ${formatETB(discountUSD)}</td>
+              </tr>
+              ` : ''}
+              <tr style="border-top: 1px solid #cbd5e1;">
+                <td style="padding: 12px 0; font-size: 15px; font-weight: 700; color: #0f172a;">Exact Total Paid:</td>
+                <td style="padding: 12px 0; font-size: 18px; font-weight: 800; text-align: right; color: #2563eb;">${formatETB(session.totalAmount)}</td>
+              </tr>
+            </table>
+          </div>
+
+          <div style="background-color: #eff6ff; border-left: 4px solid #2563eb; padding: 12px 16px; border-radius: 4px; font-size: 12px; color: #1e40af; line-height: 1.5;">
+            <strong>Autonomous Escrow Assurance:</strong> Your exact payment of <strong>${formatETB(session.totalAmount)}</strong> is held in zero-trust marketplace escrow and will only be disbursed to the vendor upon courier delivery confirmation.
+          </div>
         </div>
       `,
     });
 
-    session.reconciliationNotes = `Autonomous Payment Healer resolved race condition. Gateway clearance confirmed, Order #${newOrder.orderNumber} generated, and $${netVendorPayout.toFixed(2)} locked in escrow.`;
+    session.reconciliationNotes = `Autonomous Payment Healer resolved race condition. Gateway clearance confirmed, Order #${newOrder.orderNumber} generated, and ${formatETB(netVendorPayout)} locked in escrow.`;
 
     db.addAudit({
       actionType: 'PAYMENT_RECONCILED',
-      summary: `[Autonomous Payment Reconciliation] Resolved checkout callback race condition for #${session.sessionId}. Verified gateway payment, formulated Order #${newOrder.orderNumber}, and locked $${newEscrow.grossAmount.toFixed(2)} GMV into escrow ledger.`,
+      summary: `[Autonomous Payment Reconciliation] Resolved checkout callback race condition for #${session.sessionId}. Verified gateway payment, formulated Order #${newOrder.orderNumber}, and locked ${formatETB(newEscrow.grossAmount)} GMV into escrow ledger.`,
       details: {
         sessionId: session.sessionId,
         orderNumber: newOrder.orderNumber,
         customer: session.customerName,
-        total: session.totalAmount,
-        escrowLocked: newEscrow.grossAmount,
+        totalETB: formatETB(session.totalAmount),
+        escrowLockedETB: formatETB(newEscrow.grossAmount),
       },
       source: 'MULTI_AGENT_DAG',
     });

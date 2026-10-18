@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { agentToolDeclarations, executeAgentTool } from './tools.js';
 import { db } from '../data/db.js';
+import { formatETB } from '../utils/currency.js';
 
 function buildLiveStoreContext(): string {
   const productsSummary = db.products.map((p) => ({
@@ -18,7 +19,7 @@ function buildLiveStoreContext(): string {
     burnRatePerDay: p.predictive?.burnRatePerDay,
     stockoutRisk: `${p.predictive?.stockoutRiskPercentage}%`,
     backupSupplier: p.predictive?.secondarySupplier
-      ? `${p.predictive.secondarySupplier.name} (${p.predictive.secondarySupplier.leadTimeDays}d lead, $${p.predictive.secondarySupplier.unitPrice})`
+      ? `${p.predictive.secondarySupplier.name} (${p.predictive.secondarySupplier.leadTimeDays}d lead, ${formatETB(p.predictive.secondarySupplier.unitPrice)})`
       : 'None',
   }));
 
@@ -214,7 +215,7 @@ async function handleDeterministicFallback(prompt: string): Promise<AgentExecuti
       result: poRes,
     });
     return {
-      reply: `Dispatched an official Purchase Order requisition for ${qty} units of ${matchedProduct.name} (${matchedProduct.sku}) to vendor ${matchedProduct.vendorName} (${matchedProduct.vendorEmail}). Wholesale unit price: $${matchedProduct.unitPrice.toFixed(2)}.`,
+      reply: `Dispatched an official Purchase Order requisition for ${qty} units of ${matchedProduct.name} (${matchedProduct.sku}) to vendor ${matchedProduct.vendorName} (${matchedProduct.vendorEmail}). Wholesale unit price: ${formatETB(matchedProduct.unitPrice)}.`,
       toolsExecuted,
     };
   }
@@ -223,7 +224,7 @@ async function handleDeterministicFallback(prompt: string): Promise<AgentExecuti
   if (matchedProduct) {
     const p = matchedProduct;
     return {
-      reply: `**SKU ${p.sku} (${p.name})**\n\n- **Current Stock:** ${p.currentStock} units (Safety threshold: ${p.reorderThreshold})\n- **Burn Rate:** ${p.predictive.burnRatePerDay}/day (Days of Inventory: ${p.predictive.daysOfInventoryRemaining}d)\n- **Stockout Risk:** ${p.predictive.stockoutRiskPercentage}%\n- **Primary Vendor:** ${p.vendorName} (${p.vendorEmail})\n- **Unit Price:** $${p.unitPrice.toFixed(2)}\n- **Secondary Backup Supplier:** ${p.predictive.secondarySupplier ? `${p.predictive.secondarySupplier.name} (${p.predictive.secondarySupplier.leadTimeDays}d lead, $${p.predictive.secondarySupplier.unitPrice.toFixed(2)})` : 'None'}\n- **Status:** ${p.isRestockFlagged ? `Flagged [${p.restockUrgency}]` : 'Normal'}`,
+      reply: `**SKU ${p.sku} (${p.name})**\n\n- **Current Stock:** ${p.currentStock} units (Safety threshold: ${p.reorderThreshold})\n- **Burn Rate:** ${p.predictive.burnRatePerDay}/day (Days of Inventory: ${p.predictive.daysOfInventoryRemaining}d)\n- **Stockout Risk:** ${p.predictive.stockoutRiskPercentage}%\n- **Primary Vendor:** ${p.vendorName} (${p.vendorEmail})\n- **Unit Price:** ${formatETB(p.unitPrice)}\n- **Secondary Backup Supplier:** ${p.predictive.secondarySupplier ? `${p.predictive.secondarySupplier.name} (${p.predictive.secondarySupplier.leadTimeDays}d lead, ${formatETB(p.predictive.secondarySupplier.unitPrice)})` : 'None'}\n- **Status:** ${p.isRestockFlagged ? `Flagged [${p.restockUrgency}]` : 'Normal'}`,
       toolsExecuted,
     };
   }
@@ -254,7 +255,7 @@ async function handleDeterministicFallback(prompt: string): Promise<AgentExecuti
   } else if (lower.includes('escrow') || lower.includes('settlement') || lower.includes('commission') || lower.includes('take')) {
     const escrowAudit = await executeAgentTool('audit_escrow_settlement_ledger', { filter: 'ALL' });
     toolsExecuted.push({ name: 'audit_escrow_settlement_ledger', args: { filter: 'ALL' }, result: escrowAudit });
-    reply = `💰 Multi-Vendor Escrow Ledger Audit complete. Total Marketplace GMV: $${escrowAudit.totalGross.toFixed(2)} | Platform Commission (12%): $${escrowAudit.totalPlatformTake.toFixed(2)} | Net Vendor Payouts: $${escrowAudit.totalVendorPayout.toFixed(2)} across ${escrowAudit.count} orders.`;
+    reply = `💰 Multi-Vendor Escrow Ledger Audit complete. Total Marketplace GMV: ${formatETB(escrowAudit.totalGross)} | Platform Commission (12%): ${formatETB(escrowAudit.totalPlatformTake)} | Net Vendor Payouts: ${formatETB(escrowAudit.totalVendorPayout)} across ${escrowAudit.count} orders.`;
   } else if (lower.includes('checkout') || lower.includes('callback') || lower.includes('payment') || lower.includes('race')) {
     const pendingSession = db.checkoutSessions.find((s) => s.status === 'CALLBACK_PENDING') || db.checkoutSessions[0];
     if (pendingSession) {

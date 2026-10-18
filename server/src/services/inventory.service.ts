@@ -1,6 +1,7 @@
 import { db } from '../data/db.js';
 import { Product, RestockUrgency } from '../types/index.js';
 import { emailService } from './email.service.js';
+import { formatETB } from '../utils/currency.js';
 
 export class InventoryService {
   getAllProducts(): Product[] {
@@ -64,43 +65,54 @@ export class InventoryService {
     }
 
     const reorderQuantity = quantityOverride || product.suggestedReorderQuantity;
-    const estimatedCost = (reorderQuantity * product.unitPrice * 0.65).toFixed(2); // estimated wholesale cost
+    const estimatedCostUSD = Number((reorderQuantity * product.unitPrice * 0.65).toFixed(2)); // estimated wholesale cost
 
     const poNumber = `PO-${Date.now().toString().slice(-6)}`;
     const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-        <h2 style="color: #2563eb; margin-top: 0;">OFFICIAL PURCHASE ORDER REQUISITION</h2>
-        <p><strong>PO Reference:</strong> ${poNumber}</p>
-        <p><strong>Vendor:</strong> ${product.vendorName} (${product.vendorEmail})</p>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;" />
-        <table style="width: 100%; border-collapse: collapse;">
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1e293b;">
+        <div style="border-bottom: 2px solid #2563eb; padding-bottom: 16px; margin-bottom: 20px;">
+          <span style="font-size: 11px; font-weight: 700; color: #2563eb; letter-spacing: 1px; text-transform: uppercase;">Official Purchase Order Requisition</span>
+          <h1 style="color: #0f172a; margin: 6px 0 0; font-size: 20px;">Urgent Restock Batch Requisition &bull; ${poNumber}</h1>
+        </div>
+
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 20px; font-size: 13px;">
+          <p style="margin: 3px 0;"><strong>PO Reference:</strong> ${poNumber}</p>
+          <p style="margin: 3px 0;"><strong>Vendor Partner:</strong> ${product.vendorName} (<code>${product.vendorEmail}</code>)</p>
+          <p style="margin: 3px 0;"><strong>Billing Currency:</strong> Ethiopian Birr (ETB)</p>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;">
           <thead>
-            <tr style="background-color: #f8fafc; text-align: left;">
-              <th style="padding: 8px;">SKU</th>
-              <th style="padding: 8px;">Item Description</th>
-              <th style="padding: 8px;">Requested Units</th>
-              <th style="padding: 8px;">Est. Cost</th>
+            <tr style="border-bottom: 2px solid #cbd5e1; text-align: left; color: #64748b; font-size: 11px; background-color: #f1f5f9;">
+              <th style="padding: 10px 8px;">SKU</th>
+              <th style="padding: 10px 8px;">Item Description</th>
+              <th style="padding: 10px 8px; text-align: center;">Requested Qty</th>
+              <th style="padding: 10px 8px; text-align: right;">Unit Wholesale</th>
+              <th style="padding: 10px 8px; text-align: right;">Est. Batch Total</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td style="padding: 8px; border-top: 1px solid #e2e8f0;">${product.sku}</td>
-              <td style="padding: 8px; border-top: 1px solid #e2e8f0;">${product.name}</td>
-              <td style="padding: 8px; border-top: 1px solid #e2e8f0;"><strong>${reorderQuantity}</strong></td>
-              <td style="padding: 8px; border-top: 1px solid #e2e8f0;">$${estimatedCost}</td>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 12px 8px; font-family: monospace; font-weight: 600;">${product.sku}</td>
+              <td style="padding: 12px 8px;">${product.name}</td>
+              <td style="padding: 12px 8px; text-align: center; font-weight: 700; color: #2563eb;">${reorderQuantity}</td>
+              <td style="padding: 12px 8px; text-align: right;">${formatETB(product.unitPrice * 0.65)}</td>
+              <td style="padding: 12px 8px; text-align: right; font-weight: 700; color: #0f172a;">${formatETB(estimatedCostUSD)}</td>
             </tr>
           </tbody>
         </table>
-        ${customNotes ? `<p style="margin-top: 15px;"><strong>Special Instructions:</strong> ${customNotes}</p>` : ''}
-        <p style="margin-top: 20px; font-size: 12px; color: #64748b;">
-          Automated purchase order requisition dispatched by Autonomous E-Commerce Operations AI Specialist.
-        </p>
+
+        ${customNotes ? `<div style="background-color: #fefce8; border: 1px solid #fef08a; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 12px; color: #854d0e;"><strong>Special Logistics Instructions:</strong> ${customNotes}</div>` : ''}
+
+        <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 12px 16px; border-radius: 4px; font-size: 12px; color: #166534; line-height: 1.5;">
+          <strong>Autonomous Procurement Notice:</strong> Dispatched automatically by the Autonomous E-Commerce Operations AI Specialist. Estimated total wholesale settlement: <strong>${formatETB(estimatedCostUSD)}</strong>.
+        </div>
       </div>
     `;
 
     const emailResult = await emailService.sendEmail({
       to: product.vendorEmail,
-      subject: `[URGENT RESTOCK PO: ${poNumber}] Restock Requisition for SKU ${product.sku}`,
+      subject: `[URGENT RESTOCK PO: ${poNumber}] Restock Requisition for SKU ${product.sku} (${formatETB(estimatedCostUSD)})`,
       htmlContent: emailHtml,
     });
 
@@ -108,7 +120,7 @@ export class InventoryService {
 
     db.addAudit({
       actionType: 'PO_DISPATCHED',
-      summary: `[PO Dispatched] Auto-generated and emailed Restock Requisition ${poNumber} to vendor ${product.vendorName} (${product.vendorEmail}) for ${reorderQuantity} units.`,
+      summary: `[PO Dispatched] Auto-generated and emailed Restock Requisition ${poNumber} to vendor ${product.vendorName} (${product.vendorEmail}) for ${reorderQuantity} units (${formatETB(estimatedCostUSD)}).`,
       details: {
         poNumber,
         sku: product.sku,
@@ -116,18 +128,20 @@ export class InventoryService {
         vendorEmail: product.vendorEmail,
         deliveryMode: emailResult.mode,
         messageId: emailResult.messageId,
+        estimatedCostETB: formatETB(estimatedCostUSD),
       },
       source,
     });
 
     return {
       success: true,
-      message: `Purchase order ${poNumber} dispatched to ${product.vendorEmail} (${emailResult.mode})`,
+      message: `Purchase order ${poNumber} dispatched to ${product.vendorEmail} (${emailResult.mode}) - Total: ${formatETB(estimatedCostUSD)}`,
       poDetails: {
         poNumber,
         sku: product.sku,
         reorderQuantity,
         vendorEmail: product.vendorEmail,
+        estimatedCostETB: formatETB(estimatedCostUSD),
         emailResult,
       },
     };

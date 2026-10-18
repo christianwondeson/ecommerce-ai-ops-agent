@@ -146,13 +146,31 @@ apiRouter.get('/checkout/sessions', (req, res) => {
 });
 
 apiRouter.post('/checkout/create', (req, res) => {
-  const { customerName, customerEmail, items } = req.body;
+  const {
+    customerName,
+    customerEmail,
+    customerPhone,
+    subcity,
+    streetAddress,
+    deliveryOption,
+    deliveryFeeUSD,
+    discountUSD,
+    finalTotalUSD,
+    items,
+  } = req.body;
   if (!customerName || !items || !Array.isArray(items)) {
     return res.status(400).json({ success: false, message: 'Invalid checkout parameters.' });
   }
   const result = checkoutService.createCheckoutSession({
     customerName,
-    customerEmail: customerEmail || 'guest@customer.com',
+    customerEmail: customerEmail || 'guest@customer.et',
+    customerPhone,
+    subcity,
+    streetAddress,
+    deliveryOption,
+    deliveryFeeUSD: typeof deliveryFeeUSD === 'number' ? deliveryFeeUSD : 0,
+    discountUSD: typeof discountUSD === 'number' ? discountUSD : 0,
+    finalTotalUSD: typeof finalTotalUSD === 'number' ? finalTotalUSD : undefined,
     items,
   });
   res.json(result);

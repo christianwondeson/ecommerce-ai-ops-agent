@@ -52,7 +52,7 @@ class EmailService {
           const bannerHtml = `
             <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #2563eb; padding: 12px; margin-bottom: 20px; font-family: monospace; font-size: 11px;">
               <strong>[RESEND SANDBOX DISPATCH]</strong><br/>
-              Intended Vendor Recipient: <code>${options.to}</code><br/>
+              Intended Recipient: <code>${options.to}</code><br/>
               Subject: ${options.subject}<br/>
               Delivered to verified account owner inbox for Level 1 assessment testing.
             </div>
@@ -68,7 +68,7 @@ class EmailService {
             body: JSON.stringify({
               from: fromAddress,
               to: [ownerEmail],
-              subject: `[VENDOR ROUTE -> ${options.to}] ${options.subject}`,
+              subject: `[SANDBOX ROUTE -> ${options.to}] ${options.subject}`,
               html: bannerHtml,
             }),
           });

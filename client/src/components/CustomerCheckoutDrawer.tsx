@@ -68,6 +68,7 @@ export function CustomerCheckoutDrawer({
   // Delivery & Recipient state
   const [customerName, setCustomerName] = useState("Abebech Tadesse");
   const [customerPhone, setCustomerPhone] = useState("+251 911 458920");
+  const [customerEmail, setCustomerEmail] = useState("christianwondeson22@gmail.com");
   const [selectedSubcity, setSelectedSubcity] = useState(ADDIS_SUBCITIES[0]);
   const [streetAddress, setStreetAddress] = useState("Near Medhanialem Cathedral, Bole");
   const [selectedDeliveryId, setSelectedDeliveryId] = useState("EXPRESS_MOTO");
@@ -148,7 +149,14 @@ export function CustomerCheckoutDrawer({
     mutationFn: () =>
       api.createCheckout({
         customerName,
-        customerEmail: `${customerName.toLowerCase().replace(/\s+/g, ".")}@customer.et`,
+        customerEmail: customerEmail.trim() || `${customerName.toLowerCase().replace(/\s+/g, ".")}@customer.et`,
+        customerPhone,
+        subcity: selectedSubcity,
+        streetAddress,
+        deliveryOption: selectedDelivery.name,
+        deliveryFeeUSD,
+        discountUSD,
+        finalTotalUSD,
         items: cartDetails
           .filter((i) => i.product)
           .map((i) => ({ sku: i.product!.sku, quantity: i.quantity })),
@@ -551,6 +559,20 @@ export function CustomerCheckoutDrawer({
                         placeholder="+251 9xx xxx xxx"
                       />
                     </div>
+                  </div>
+
+                  <div className="sm:col-span-2 space-y-1">
+                    <label className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                      <span>Customer Email (Order Confirmation Target)</span>
+                      <span className="text-[9px] text-primary font-bold">Live Receipt Dispatch</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      className="checkout-input w-full rounded-xl px-3 py-2 text-xs font-mono"
+                      placeholder="e.g. christianwondeson22@gmail.com"
+                    />
                   </div>
 
                   <div className="sm:col-span-2 space-y-1">

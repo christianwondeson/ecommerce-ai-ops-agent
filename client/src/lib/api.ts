@@ -155,6 +155,13 @@ export const api = {
   async createCheckout(payload: {
     customerName: string;
     customerEmail?: string;
+    customerPhone?: string;
+    subcity?: string;
+    streetAddress?: string;
+    deliveryOption?: string;
+    deliveryFeeUSD?: number;
+    discountUSD?: number;
+    finalTotalUSD?: number;
     items: Array<{ sku: string; quantity: number }>;
   }): Promise<any> {
     const res = await fetch(`${API_BASE}/api/checkout/create`, {
